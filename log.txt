@@ -1,0 +1,2 @@
+npx @tailwindcss/cli --input ./frontend/public/styles.css --output ./frontend/public/styles.min.css --watch=always
+wgo -xdir . wails3 dev :: wgo -dir ./fontend -cd ./frontend npx @tailwindcss/cli --input ./public/styles.css --output ./public/styles.min.css --watch=always
