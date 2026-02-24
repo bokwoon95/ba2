@@ -3,22 +3,7 @@ import {GreetService} from "../bindings/changeme";
 import "basecoat-css/basecoat";
 import "basecoat-css/all";
 
-const resultElement = document.getElementById('result');
-const timeElement = document.getElementById('time');
-
-window.doGreet = async () => {
-    let name = document.getElementById('name').value;
-    if (!name) {
-        name = 'anonymous';
-    }
-    try {
-        resultElement.innerText = await GreetService.Greet(name);
-    } catch (err) {
-        console.error(err);
-    }
-}
-
-Events.On('time', (time) => {
+Events.On("time", (time) => {
     // timeElement.innerText = time.data;
 });
 
@@ -27,22 +12,8 @@ Events.On('time', (time) => {
  */
 const initFunctions = {
   "data-click-event": function initClickEvent(targetElement, attributeValue) {
-    targetElement.addEventListener("click", function dispatchEvent() {
+    targetElement.addEventListener("click", function dispatchEventOnClick() {
       document.dispatchEvent(new Event(attributeValue));
-    });
-  },
-  "data-go-back": function initGoBack(targetElement) {
-    if (targetElement.tagName != "A") {
-      return;
-    }
-    targetElement.addEventListener("click", function goBack(event) {
-      if (!(event instanceof PointerEvent)) {
-        return;
-      }
-      if (document.referrer && history.length > 2 && !event.ctrlKey && !event.metaKey) {
-        event.preventDefault();
-        history.back();
-      }
     });
   },
 };
