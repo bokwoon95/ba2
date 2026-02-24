@@ -1,8 +1,7 @@
 import {Events} from "@wailsio/runtime";
 import {GreetService} from "../bindings/changeme";
 import "basecoat-css/basecoat";
-import "basecoat-css/sidebar";
-import "./dropdown-menu-v4.js";
+import "basecoat-css/all";
 
 const resultElement = document.getElementById('result');
 const timeElement = document.getElementById('time');
