@@ -30,7 +30,7 @@ func main() {
 	app.RegisterService(application.NewServiceWithOptions(backendService, application.ServiceOptions{
 		Route: "/backend",
 	}))
-	app.Window.NewWithOptions(application.WebviewWindowOptions{
+	window := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title: "Browser Automate",
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
@@ -38,8 +38,10 @@ func main() {
 			TitleBar:                application.MacTitleBarHiddenInset,
 		},
 		BackgroundColour: application.NewRGB(27, 38, 54),
-		URL:              "/",
+		URL:              "/index.html",
 	})
+	_ = window
+	// window.Show()
 	go func() {
 		for {
 			now := time.Now().Format(time.RFC1123)
