@@ -14,11 +14,8 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
-func init() {
-	application.RegisterEvent[string]("time")
-}
-
 func main() {
+	application.RegisterEvent[string]("time")
 	app := application.New(application.Options{
 		Name:        "ba2",
 		Description: "A demo of using raw HTML & CSS",

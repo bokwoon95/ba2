@@ -1,5 +1,4 @@
 import {Events} from "@wailsio/runtime";
-import {GreetService} from "../bindings/changeme";
 import "basecoat-css/basecoat";
 import "basecoat-css/all";
 
