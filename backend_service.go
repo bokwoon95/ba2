@@ -47,6 +47,7 @@ var playwrightCDNMirrors = []string{
 	"https://playwright-verizon.azureedge.net",
 }
 
+// TODO: refactor InstallDriver becomes a http.HandlerFunc, and it writes its progress line by line as the response output. Then on the JS side, we will read the
 func (svc *BackendService) InstallDriver() error {
 	platform := ""
 	switch runtime.GOOS {
@@ -97,10 +98,11 @@ func (svc *BackendService) InstallDriver() error {
 			downloadErr = errors.Join(downloadErr, fmt.Errorf("could not read response body: %w", httpError))
 			continue
 		}
-		_ = body
+		_ = body // TODO: write zip file into driver directory.
 		break
 	}
-	svc.PlaywrightDriver.DownloadDriver()
+	// TODO: unzip the zip file in driver directory.
+	_ = svc.PlaywrightDriver.DownloadDriver
 	return nil
 }
 
