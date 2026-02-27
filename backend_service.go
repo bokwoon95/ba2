@@ -23,6 +23,8 @@ type BackendService struct {
 
 var _ http.Handler = (*BackendService)(nil)
 
+func (svc *BackendService) Hello() string { return "hello" }
+
 // TODO: make this a GET handlerfunc. Returns a JS object.
 func (service *BackendService) GetDriverVersion() (currentVersion string, requiredVersion string, err error) {
 	fileInfo, err := os.Stat(filepath.Join(service.PlaywrightDriverDirectory, "package", "cli.js"))
@@ -111,5 +113,5 @@ func (svc *BackendService) installDriver(w http.ResponseWriter, r *http.Request)
 
 func (service *BackendService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("got here!")
-	w.Write([]byte("hello world!"))
+	w.Write([]byte(r.URL.Path))
 }
