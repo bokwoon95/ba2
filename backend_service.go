@@ -21,6 +21,9 @@ type BackendService struct {
 	PlaywrightDriverDirectory string
 }
 
+var _ http.Handler = (*BackendService)(nil)
+
+// TODO: make this a GET handlerfunc. Returns a JS object.
 func (service *BackendService) GetDriverVersion() (currentVersion string, requiredVersion string, err error) {
 	fileInfo, err := os.Stat(filepath.Join(service.PlaywrightDriverDirectory, "package", "cli.js"))
 	if err != nil {
@@ -48,7 +51,7 @@ var playwrightCDNMirrors = []string{
 }
 
 // TODO: refactor InstallDriver becomes a http.HandlerFunc, and it writes its progress line by line as the response output. Then on the JS side, we will read the
-func (svc *BackendService) InstallDriver() error {
+func (svc *BackendService) installDriver(w http.ResponseWriter, r *http.Request) error {
 	platform := ""
 	switch runtime.GOOS {
 	case "windows":
@@ -107,4 +110,6 @@ func (svc *BackendService) InstallDriver() error {
 }
 
 func (service *BackendService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("got here!")
+	w.Write([]byte("hello world!"))
 }

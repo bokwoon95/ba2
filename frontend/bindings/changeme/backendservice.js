@@ -7,6 +7,7 @@
 import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
 /**
+ * TODO: make this a GET handlerfunc. Returns a JS object.
  * @returns {$CancellablePromise<[string, string]>}
  */
 export function GetDriverVersion() {
