@@ -2,6 +2,19 @@ npx @tailwindcss/cli --input ./frontend/public/styles.css --output ./frontend/pu
 wgo -xdir . wails3 dev :: wgo -dir ./fontend -cd ./frontend npx @tailwindcss/cli --input ./public/styles.css --output ./public/styles.min.css --watch=always
 
 TODO: add BackendService rooted at the /backend URL
+TODO: expose the BackendService router at localhost:9246 so we can make get and post requests to it
+    TODO: will we be able to send a POST request to /backend/driver/install in a GUI HTTP Client and somehow see its streaming response in real time?
+
+GET /backend/driver {"currentVersion":"","requiredVersion":""}
+POST /backend/driver/install <streams download progress>
+POST /backend/driver/install
+
+init flow
+GET /backend/driver
+if driver not installed, open new window to /installdriver.html and ask the user to click "Install driver" which calls /backend/installdriver
+if driver version not match, open new window to /installdriver.html and ask the user to click "Install driver" which calls /backend/installdriver
+GET /backend/status/flow to get a list of flow actions
+for each flow action, initialize a new row in the table
 
 does driver exist?
 
