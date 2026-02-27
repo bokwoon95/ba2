@@ -6,8 +6,11 @@ import (
 	_ "embed"
 	"errors"
 	"log"
+	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/playwright-community/playwright-go"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -16,6 +19,19 @@ var assets embed.FS
 
 func main() {
 	application.RegisterEvent[string]("time")
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	driverDirectory := filepath.Join(userHomeDir, "browserautomate", "playwrightdriver")
+	driver, err := playwright.NewDriver(&playwright.RunOptions{
+		DriverDirectory:     driverDirectory,
+		SkipInstallBrowsers: true,
+		Verbose:             true,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 	app := application.New(application.Options{
 		Name:        "ba2",
 		Description: "A demo of using raw HTML & CSS",
@@ -26,7 +42,11 @@ func main() {
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
 	})
-	backendService := NewBackendService(app)
+	backendService := &BackendService{
+		App:             app,
+		Driver:          driver,
+		DriverDirectory: driverDirectory,
+	}
 	app.RegisterService(application.NewServiceWithOptions(backendService, application.ServiceOptions{
 		Route: "/backend",
 	}))
@@ -49,7 +69,7 @@ func main() {
 			time.Sleep(time.Second)
 		}
 	}()
-	err := app.Run()
+	err = app.Run()
 	if err != nil && !errors.Is(err, context.Canceled) {
 		log.Fatal(err)
 	}

@@ -2,3 +2,13 @@ npx @tailwindcss/cli --input ./frontend/public/styles.css --output ./frontend/pu
 wgo -xdir . wails3 dev :: wgo -dir ./fontend -cd ./frontend npx @tailwindcss/cli --input ./public/styles.css --output ./public/styles.min.css --watch=always
 
 TODO: add BackendService rooted at the /backend URL
+
+does driver exist?
+
+option.DriverDirectory = filepath.Join(cacheDirectory, "ms-playwright-go", playwrightCliVersion)
+
+$HOME/browserautomate/playwrightdriver
+$HOME/browserautomate/playwrightdriver/package
+$HOME/browserautomate/chromeprofile
+
+automate excel documents?
