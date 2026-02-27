@@ -23,9 +23,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	driverDirectory := filepath.Join(userHomeDir, "browserautomate", "playwrightdriver")
-	driver, err := playwright.NewDriver(&playwright.RunOptions{
-		DriverDirectory:     driverDirectory,
+	playwrightDriverDirectory := filepath.Join(userHomeDir, "browserautomate", "playwrightdriver")
+	playwrightDriver, err := playwright.NewDriver(&playwright.RunOptions{
+		DriverDirectory:     playwrightDriverDirectory,
 		SkipInstallBrowsers: true,
 		Verbose:             true,
 	})
@@ -43,9 +43,9 @@ func main() {
 		},
 	})
 	backendService := &BackendService{
-		App:             app,
-		Driver:          driver,
-		DriverDirectory: driverDirectory,
+		App:                       app,
+		PlaywrightDriver:          playwrightDriver,
+		PlaywrightDriverDirectory: playwrightDriverDirectory,
 	}
 	app.RegisterService(application.NewServiceWithOptions(backendService, application.ServiceOptions{
 		Route: "/backend",

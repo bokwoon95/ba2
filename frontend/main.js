@@ -1,10 +1,16 @@
 import {Events} from "@wailsio/runtime";
+import {BackendService} from "./bindings/changeme";
 import "basecoat-css/basecoat";
 import "basecoat-css/all";
 
 Events.On("time", (time) => {
     // timeElement.innerText = time.data;
 });
+
+(async function init() {
+  const [currentVersion, requiredVersion] = await BackendService.GetDriverVersion();
+  console.log(currentVersion, requiredVersion);
+})();
 
 /**
  * @type {Record<string, (element: Element, attributeValue: string) => void>}

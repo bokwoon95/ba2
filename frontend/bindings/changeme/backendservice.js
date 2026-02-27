@@ -7,8 +7,8 @@
 import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
 /**
- * @returns {$CancellablePromise<string>}
+ * @returns {$CancellablePromise<[string, string]>}
  */
-export function Hello() {
-    return $Call.ByID(3952208695);
+export function GetDriverVersion() {
+    return $Call.ByID(1748134435);
 }
