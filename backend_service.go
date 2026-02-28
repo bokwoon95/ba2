@@ -1,16 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/playwright-community/playwright-go"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -22,28 +24,69 @@ type BackendService struct {
 	PlaywrightDriverDirectory string
 }
 
+type ContextData struct {
+	PathTail string `json:"-"`
+}
+
 var _ http.Handler = (*BackendService)(nil)
 
 func (svc *BackendService) Hello() string { return "hello" }
 
-// TODO: make this a GET handlerfunc. Returns a JS object.
-func (service *BackendService) GetDriverVersion() (currentVersion string, requiredVersion string, err error) {
+func (service *BackendService) driver(w http.ResponseWriter, r *http.Request, contextData ContextData) {
+	if contextData.PathTail != "" {
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+	type Response struct {
+		CurrentVersion  string `json:"currentVersion"`
+		RequiredVersion string `json:"requiredVersion"`
+		Error           string `json:"error"`
+	}
+	if r.Method != "GET" {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	writeResponse := func(w http.ResponseWriter, r *http.Request, response Response) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		if r.Method == "HEAD" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		encoder := json.NewEncoder(w)
+		encoder.SetIndent("", "  ")
+		encoder.SetEscapeHTML(false)
+		err := encoder.Encode(&response)
+		if err != nil {
+			slog.Error(err.Error())
+		}
+	}
+	var response Response
+	response.RequiredVersion = service.PlaywrightDriver.Version
 	fileInfo, err := os.Stat(filepath.Join(service.PlaywrightDriverDirectory, "package", "cli.js"))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return "", "", nil
+			response.Error = "ErrNotExist"
+			writeResponse(w, r, response)
+			return
 		}
-		return "", "", err
+		response.Error = err.Error()
+		writeResponse(w, r, response)
+		return
 	}
 	if fileInfo.IsDir() {
-		return "", "", nil
+		response.Error = "ErrNotExist"
+		writeResponse(w, r, response)
+		return
 	}
 	cmd := service.PlaywrightDriver.Command("--version")
 	output, err := cmd.Output()
 	if err != nil {
-		return "", "", fmt.Errorf("could not run driver: %w", err)
+		response.Error = fmt.Sprintf("could not run driver: %w", err)
+		writeResponse(w, r, response)
+		return
 	}
-	return string(output), service.PlaywrightDriver.Version, nil
+	response.CurrentVersion = string(output)
+	writeResponse(w, r, response)
 }
 
 // playwrightCDNMirrors is copied from playwright-go.
@@ -54,7 +97,7 @@ var playwrightCDNMirrors = []string{
 }
 
 // TODO: refactor InstallDriver becomes a http.HandlerFunc, and it writes its progress line by line as the response output. Then on the JS side, we will read the
-func (svc *BackendService) installDriver(w http.ResponseWriter, r *http.Request) error {
+func (svc *BackendService) installdriver(w http.ResponseWriter, r *http.Request, contextData ContextData) error {
 	platform := ""
 	switch runtime.GOOS {
 	case "windows":
@@ -113,5 +156,37 @@ func (svc *BackendService) installDriver(w http.ResponseWriter, r *http.Request)
 }
 
 func (service *BackendService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "%s %s\n", r.URL.Path, time.Now())
+	// Redirect unclean paths to the clean path equivalent.
+	urlPath := path.Clean(r.URL.Path)
+	if urlPath != "/" {
+		urlPath += "/"
+	}
+	if urlPath != r.URL.Path {
+		if r.Method == "GET" || r.Method == "HEAD" {
+			uri := *r.URL
+			uri.Path = urlPath
+			http.Redirect(w, r, uri.String(), http.StatusMovedPermanently)
+			return
+		}
+	}
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+	pathHead, pathTail, _ := strings.Cut(strings.Trim(urlPath, "/"), "/")
+	contextData := ContextData{
+		PathTail: pathTail,
+	}
+	switch pathHead {
+	case "driver":
+		service.driver(w, r, contextData)
+		return
+	case "installdriver":
+		service.installdriver(w, r, contextData)
+		return
+	default:
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
 }

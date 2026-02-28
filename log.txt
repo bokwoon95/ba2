@@ -1,8 +1,7 @@
 npx @tailwindcss/cli --input ./frontend/public/styles.css --output ./frontend/public/styles.min.css --watch=always
 wgo -xdir . wails3 dev :: wgo -dir ./fontend -cd ./frontend npx @tailwindcss/cli --input ./public/styles.css --output ./public/styles.min.css --watch=always
 
-TODO: add BackendService rooted at the /backend URL
-TODO: expose the BackendService router at localhost:9246 so we can make get and post requests to it
+DONE: expose the BackendService router at localhost:9246 so we can make get and post requests to it
     TODO: will we be able to send a POST request to /backend/driver/install in a GUI HTTP Client and somehow see its streaming response in real time?
 
 GET /backend/driver {"currentVersion":"","requiredVersion":""}
