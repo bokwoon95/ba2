@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/playwright-community/playwright-go"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -113,5 +114,5 @@ func (svc *BackendService) installDriver(w http.ResponseWriter, r *http.Request)
 
 func (service *BackendService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("got here!")
-	w.Write([]byte(r.URL.Path))
+	fmt.Fprintf(w, "%s %s\n", r.URL.Path, time.Now())
 }

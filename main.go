@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"errors"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -47,6 +48,9 @@ func main() {
 		PlaywrightDriver:          playwrightDriver,
 		PlaywrightDriverDirectory: playwrightDriverDirectory,
 	}
+	go func() {
+		http.ListenAndServe("localhost:9246", backendService)
+	}()
 	app.RegisterService(application.NewServiceWithOptions(backendService, application.ServiceOptions{
 		Route: "/backend",
 	}))
