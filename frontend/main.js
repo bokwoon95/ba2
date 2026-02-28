@@ -1,15 +1,21 @@
-import {Events} from "@wailsio/runtime";
-import {BackendService} from "./bindings/changeme";
+import { Events } from "@wailsio/runtime";
+import { BackendService } from "./bindings/changeme";
 import "basecoat-css/basecoat";
 import "basecoat-css/all";
 
 Events.On("time", (time) => {
-    // timeElement.innerText = time.data;
+  // timeElement.innerText = time.data;
 });
 
 (async function init() {
-  const [currentVersion, requiredVersion] = await BackendService.GetDriverVersion();
-  console.log(currentVersion, requiredVersion);
+  let response = await fetch("/backend/driver/");
+  if (!response.ok) {
+    console.error(response);
+  } else {
+    const driverData = await response.json();
+    console.log(driverData);
+  }
+  console.log(await BackendService.Hello());
 })();
 
 /**
