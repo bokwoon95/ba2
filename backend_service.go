@@ -113,6 +113,5 @@ func (svc *BackendService) installDriver(w http.ResponseWriter, r *http.Request)
 }
 
 func (service *BackendService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("got here!")
 	fmt.Fprintf(w, "%s %s\n", r.URL.Path, time.Now())
 }
