@@ -116,8 +116,8 @@ func (svc *BackendService) installdriver(w http.ResponseWriter, r *http.Request)
 	}
 	baseName := fmt.Sprintf("playwright-%s-%s.zip", svc.PlaywrightDriver.Version, platform)
 	filePath := filepath.Join(svc.PlaywrightDriverDirectory, baseName)
-	_, err = os.Stat(filePath)
-	if err != nil {
+	fileInfo, err := os.Stat(filePath)
+	if err != nil || fileInfo.Size() == 0 {
 		if !errors.Is(err, fs.ErrNotExist) {
 			fmt.Fprintf(w, "error fetching file info for %s: %v\n", filePath, err)
 			w.WriteHeader(http.StatusInternalServerError)
