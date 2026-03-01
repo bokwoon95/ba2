@@ -108,9 +108,15 @@ func (svc *BackendService) installdriver(w http.ResponseWriter, r *http.Request)
 			platform = "linux"
 		}
 	}
+	err := os.MkdirAll(svc.PlaywrightDriverDirectory, 0755)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "creating directory %s: %v", svc.PlaywrightDriverDirectory, err)
+		return
+	}
 	baseName := fmt.Sprintf("playwright-%s-%s.zip", svc.PlaywrightDriver.Version, platform)
 	filePath := filepath.Join(svc.PlaywrightDriverDirectory, baseName)
-	_, err := os.Stat(filePath)
+	_, err = os.Stat(filePath)
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -186,12 +192,12 @@ func (svc *BackendService) installdriver(w http.ResponseWriter, r *http.Request)
 					return
 				}
 				fmt.Fprintf(w, "download to %s complete", filePath)
+				break
 			}
 		}
 	}
-	// TODO: unzip the zip file in driver directory.
+	// TODO: unzip filePath into the driver directory.
 	_ = svc.PlaywrightDriver.DownloadDriver
-	fmt.Fprintf(w, "hi")
 }
 
 func (service *BackendService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
