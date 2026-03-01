@@ -19,11 +19,15 @@ Events.On("time", (time) => {
 })();
 
 /**
+ * streamResponseLines is a generator function that streams over a response
+ * body (returned by fetch()) line by line. Use it like this:
+ * `for await (const line of streamResponseLines(response)) { ... }`.
+ *
  * @param {Response} response
  */
-async function* lineIterator(response) {
+async function* streamResponseLines(response) {
   const reader = response.body.getReader();
-  const textDecoder = new TextDecoder();
+  const textDecoder = new TextDecoder("utf-8");
   let line = "";
   let chunk = new Uint8Array();
   // Read from the response body in chunks.
@@ -62,7 +66,7 @@ const textarea = document.getElementById("textarea");
 document.addEventListener("browserautomate:installdriver", async function() {
   textarea.value = "";
   const response = await fetch("/backend/installdriver/", { method: "POST" });
-  for await (const line of lineIterator(response)) {
+  for await (const line of streamResponseLines(response)) {
     textarea.value += line + "\n";
   }
 });
