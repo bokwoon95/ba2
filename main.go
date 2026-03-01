@@ -67,7 +67,7 @@ func main() {
 			TitleBar:                application.MacTitleBarHiddenInset,
 		},
 		BackgroundColour: application.NewRGB(27, 38, 54),
-		URL:              "/index.html",
+		URL:              "/main.html",
 	})
 	_ = window
 	// window.Show()
