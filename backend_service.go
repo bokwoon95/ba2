@@ -110,8 +110,8 @@ func (svc *BackendService) installdriver(w http.ResponseWriter, r *http.Request)
 	}
 	err := os.MkdirAll(svc.PlaywrightDriverDirectory, 0755)
 	if err != nil {
+		fmt.Fprintf(w, "creating directory %s: %v\n", svc.PlaywrightDriverDirectory, err)
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "creating directory %s: %v", svc.PlaywrightDriverDirectory, err)
 		return
 	}
 	baseName := fmt.Sprintf("playwright-%s-%s.zip", svc.PlaywrightDriver.Version, platform)
@@ -119,8 +119,8 @@ func (svc *BackendService) installdriver(w http.ResponseWriter, r *http.Request)
 	_, err = os.Stat(filePath)
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
+			fmt.Fprintf(w, "error fetching file info for %s: %v\n", filePath, err)
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "error fetching file info for %s: %v", filePath, err)
 			return
 		}
 		var pathName string
@@ -143,55 +143,56 @@ func (svc *BackendService) installdriver(w http.ResponseWriter, r *http.Request)
 			downloadURL := origin + pathName
 			req, err := http.NewRequest("GET", downloadURL, nil)
 			if err != nil {
-				fmt.Fprintf(w, "GET %s: %v", downloadURL, err)
+				fmt.Fprintf(w, "GET %s: %v\n", downloadURL, err)
 				continue
 			}
 			resp, err := httpClient.Do(req)
 			if err != nil {
-				fmt.Fprintf(w, "GET %s: %v", downloadURL, err)
+				fmt.Fprintf(w, "GET %s: %v\n", downloadURL, err)
 				continue
 			}
 			if resp.StatusCode != http.StatusOK {
 				resp.Body.Close()
-				fmt.Fprintf(w, "GET %s: non 200 status code %d (%s)", downloadURL, resp.StatusCode, resp.Status)
+				fmt.Fprintf(w, "GET %s: non 200 status code %d (%s)\n", downloadURL, resp.StatusCode, resp.Status)
 				continue
 			}
 			successfulResponse = resp
 			break
 		}
 		if successfulResponse == nil {
+			fmt.Fprintf(w, "failed to download %s from all playwright origins\n", baseName)
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "failed to download %s from all playwright origins", baseName)
 			return
 		}
+		fmt.Fprintf(w, "downloading from %s\n", successfulResponse.Request.URL.String())
 		defer successfulResponse.Body.Close()
 		file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
+			fmt.Fprintf(w, "error opening file %s: %v\n", filePath, err)
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "error opening file %s: %v", filePath, err)
 			return
 		}
 		var buf [32 * 1024]byte
 		var written int64
 		for {
-			bytesRead, readErr := file.Read(buf[:])
+			bytesRead, readErr := successfulResponse.Body.Read(buf[:])
 			if bytesRead > 0 {
 				bytesWritten, writeErr := file.Write(buf[:bytesRead])
 				written += int64(bytesWritten)
-				fmt.Fprintf(w, "downloading to %s: %s", filePath, HumanReadableFileSize(written))
+				fmt.Fprintf(w, "downloading to %s: %s\n", filePath, HumanReadableFileSize(written))
 				if writeErr != nil {
+					fmt.Fprintf(w, "error downloading to %s: %v\n", filePath, writeErr)
 					w.WriteHeader(http.StatusInternalServerError)
-					fmt.Fprintf(w, "error downloading to %s: %v", filePath, writeErr)
 					return
 				}
 			}
 			if readErr != nil {
 				if readErr != io.EOF {
+					fmt.Fprintf(w, "error downloading from %s: %v\n", successfulResponse.Request.URL.String(), readErr)
 					w.WriteHeader(http.StatusInternalServerError)
-					fmt.Fprintf(w, "error downloading from %s: %v", successfulResponse.Request.URL.String(), readErr)
 					return
 				}
-				fmt.Fprintf(w, "download to %s complete", filePath)
+				fmt.Fprintf(w, "download to %s complete\n", filePath)
 				break
 			}
 		}
