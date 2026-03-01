@@ -18,7 +18,7 @@ Events.On("time", (time) => {
   console.log(await BackendService.Hello());
 })();
 
-function installdriver() {
+async function installdriver() {
   /**
    * @param {Response} response
    */
@@ -45,61 +45,52 @@ function installdriver() {
       yield chunk.substring(startIndex);
     }
   }
-  async function* makeLineIteratorV2(response) {
-    const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-    let { value: chunk = "", done: readerDone } = await reader.read();
-    const newline = /\r?\n/g;
-    let startIndex = 0;
-    while (true) {
-      const result = newline.exec(chunk);
-      if (!result) {
-        if (readerDone) break;
-        const remainder = chunk.slice(startIndex);
-        ({ value: chunk, done: readerDone } = await reader.read());
-        chunk = remainder + (chunk || "");
-        startIndex = newline.lastIndex = 0;
-        continue;
+  /**
+   * @param {Response} response
+   */
+  async function* lineIterator(response) {
+    const reader = response.body.getReader();
+    const textDecoder = new TextDecoder();
+    let line = "";
+    let chunk = new Uint8Array();
+    // Read from the response body in chunks.
+    for (let readResult = await reader.read(); !readResult.done; readResult = await reader.read()) {
+      if (chunk.length > 0) {
+        // We have a carryover chunk from a previous iteration. There are
+        // guaranteed to be no newlines inside since the previous iteration's
+        // chunk.indexOf(10) would have caught it.
+        //
+        // Stream option has to be true because we haven't encountered a
+        // newline yet, more data may be decoded for the current line.
+        line += textDecoder.decode(chunk, { stream: true });
       }
-      yield chunk.substring(startIndex, result.index);
-      startIndex = newline.lastIndex;
+      // Get the reader's current chunk.
+      chunk = readResult.value;
+      // Jump to each newline '\n' byte in the chunk. 10 is the ASCII/UTF-8
+      // decimal value of the '\n' byte.
+      for (let index = chunk.indexOf(10); index >= 0; index = chunk.indexOf(10)) {
+        // We found a newline, decode everything up to this index and consider
+        // that as a complete line and yield it.
+        line += textDecoder.decode(chunk.subarray(0, index));
+        yield line;
+        // Reset the line.
+        line = "";
+        // Shorten the chunk to exclude what we have already decoded.
+        chunk = chunk.subarray(index + 1);
+      }
     }
-    if (startIndex < chunk.length) {
-      // Last line didn't end in a newline char
-      yield chunk.substring(startIndex);
+    // Flush any remainder bytes in the chunk.
+    if (chunk.length > 0) {
+      line += textDecoder.decode(chunk);
+      yield line;
     }
   }
-}
-
-/*
-let readResult = await reader.read();
-let chunk = readResult.value || "";
-let readerDone = readResult.done;
-let startIndex = 0;
-
-while (true) {
-  const newlineIndex = chunk.indexOf("\n", startIndex);
-
-  if (newlineIndex === -1) {
-    if (readerDone) break;
-
-    const remainder = chunk.slice(startIndex);
-    readResult = await reader.read();
-    chunk = remainder + (readResult.value || "");
-    readerDone = readResult.done;
-    startIndex = 0;
-    continue;
+  const response = await fetch("/backend/installdriver/", { method: "POST" });
+  for await (const line of lineIterator(response)) {
+    console.log(line.trim());
   }
-
-  const line = chunk.slice(startIndex, newlineIndex).trim();
-  yield line;
-  startIndex = newlineIndex + 1;
 }
-
-if (startIndex < chunk.length) {
-  // Last line didn't end in a newline char
-  yield chunk.slice(startIndex).trim();
-}
-*/
+globalThis.installdriver = installdriver;
 
 /**
  * @type {Record<string, (element: Element, attributeValue: string) => void>}
