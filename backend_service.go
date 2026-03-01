@@ -172,6 +172,7 @@ func (svc *BackendService) installdriver(w http.ResponseWriter, r *http.Request)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		defer file.Close()
 		var buf [32 * 1024]byte
 		var written int64
 		for {
@@ -195,6 +196,12 @@ func (svc *BackendService) installdriver(w http.ResponseWriter, r *http.Request)
 				fmt.Fprintf(w, "download to %s complete\n", filePath)
 				break
 			}
+		}
+		err = file.Close()
+		if err != nil {
+			fmt.Fprintf(w, "error saving to %s: %v\n", filePath, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 	}
 	// TODO: unzip filePath into the driver directory.
