@@ -191,6 +191,7 @@ func (svc *BackendService) installdriver(w http.ResponseWriter, _ *http.Request)
 		var buf [32 * 1024]byte
 		var written int64
 		for {
+			time.Sleep(300 * time.Millisecond)
 			bytesRead, readErr := successfulResponse.Body.Read(buf[:])
 			if bytesRead > 0 {
 				bytesWritten, writeErr := file.Write(buf[:bytesRead])
