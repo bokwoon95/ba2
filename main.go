@@ -24,7 +24,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	playwrightDriverDirectory := filepath.Join(userHomeDir, "browserautomate", "playwrightdriver")
+	var playwrightDriverDirectory string
+	if s := os.Getenv("PLAYWRIGHT_DRIVER_PATH"); s != "" {
+		playwrightDriverDirectory = s
+	} else {
+		playwrightDriverDirectory = filepath.Join(userHomeDir, "browserautomate", "playwrightdriver")
+	}
 	playwrightDriver, err := playwright.NewDriver(&playwright.RunOptions{
 		DriverDirectory:     playwrightDriverDirectory,
 		SkipInstallBrowsers: true,

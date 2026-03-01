@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/playwright-community/playwright-go"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -24,19 +25,11 @@ type BackendService struct {
 	PlaywrightDriverDirectory string
 }
 
-type ContextData struct {
-	PathTail string `json:"-"`
-}
-
 var _ http.Handler = (*BackendService)(nil)
 
 func (svc *BackendService) Hello() string { return "hello" }
 
-func (service *BackendService) driver(w http.ResponseWriter, r *http.Request, contextData ContextData) {
-	if contextData.PathTail != "" {
-		http.Error(w, "Not Found", http.StatusNotFound)
-		return
-	}
+func (service *BackendService) driver(w http.ResponseWriter, r *http.Request) {
 	type Response struct {
 		CurrentVersion  string `json:"currentVersion"`
 		RequiredVersion string `json:"requiredVersion"`
@@ -81,7 +74,7 @@ func (service *BackendService) driver(w http.ResponseWriter, r *http.Request, co
 	cmd := service.PlaywrightDriver.Command("--version")
 	output, err := cmd.Output()
 	if err != nil {
-		response.Error = fmt.Sprintf("could not run driver: %w", err)
+		response.Error = fmt.Sprintf("could not run driver: %v", err)
 		writeResponse(w, r, response)
 		return
 	}
@@ -97,7 +90,7 @@ var playwrightCDNMirrors = []string{
 }
 
 // TODO: refactor InstallDriver becomes a http.HandlerFunc, and it writes its progress line by line as the response output. Then on the JS side, we will read the
-func (svc *BackendService) installdriver(w http.ResponseWriter, r *http.Request, contextData ContextData) error {
+func (svc *BackendService) installdriver(w http.ResponseWriter, r *http.Request) {
 	platform := ""
 	switch runtime.GOOS {
 	case "windows":
@@ -115,44 +108,90 @@ func (svc *BackendService) installdriver(w http.ResponseWriter, r *http.Request,
 			platform = "linux"
 		}
 	}
-	pattern := "%s/builds/driver/playwright-%s-%s.zip"
-	if strings.Contains(svc.PlaywrightDriver.Version, "beta") || strings.Contains(svc.PlaywrightDriver.Version, "alpha") || strings.Contains(svc.PlaywrightDriver.Version, "next") {
-		pattern = "%s/builds/driver/next/playwright-%s-%s.zip"
-	}
-	var driverURLs []string
-	playwrightDownloadHost := os.Getenv("PLAYWRIGHT_DOWNLOAD_HOST")
-	if playwrightDownloadHost != "" {
-		driverURLs = []string{
-			fmt.Sprintf(pattern, playwrightDownloadHost, svc.PlaywrightDriver.Version, platform),
+	baseName := fmt.Sprintf("playwright-%s-%s.zip", svc.PlaywrightDriver.Version, platform)
+	filePath := filepath.Join(svc.PlaywrightDriverDirectory, baseName)
+	_, err := os.Stat(filePath)
+	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "error fetching file info for %s: %v", filePath, err)
+			return
 		}
-	} else {
-		for _, playwrightCDNMirror := range playwrightCDNMirrors {
-			driverURLs = append(driverURLs, fmt.Sprintf(pattern, playwrightCDNMirror, svc.PlaywrightDriver.Version, platform))
+		var pathName string
+		if !strings.Contains(svc.PlaywrightDriver.Version, "beta") && !strings.Contains(svc.PlaywrightDriver.Version, "alpha") && !strings.Contains(svc.PlaywrightDriver.Version, "next") {
+			pathName = "/builds/driver/" + baseName
+		} else {
+			pathName = "/builds/driver/next/" + baseName
 		}
-	}
-	var downloadErr error
-	for _, driverURL := range driverURLs {
-		httpResponse, httpError := http.Get(driverURL) // TODO: change to custom HTTP client with 5min timeout.
-		if httpError != nil {
-			downloadErr = errors.Join(downloadErr, fmt.Errorf("could not download driver from %s: %w", driverURL, httpError))
-			continue
+		var origins []string
+		if s := os.Getenv("PLAYWRIGHT_DOWNLOAD_HOST"); s != "" {
+			origins = []string{s}
+		} else {
+			origins = playwrightCDNMirrors
 		}
-		defer httpResponse.Body.Close()
-		if httpResponse.StatusCode != http.StatusOK {
-			downloadErr = errors.Join(downloadErr, fmt.Errorf("error: got non 200 status code: %d (%s) from %s", httpResponse.StatusCode, httpResponse.Status, driverURL))
-			continue
+		var successfulResponse *http.Response
+		httpClient := &http.Client{
+			Timeout: 5 * time.Minute,
 		}
-		body, httpError := io.ReadAll(httpResponse.Body)
-		if httpError != nil {
-			downloadErr = errors.Join(downloadErr, fmt.Errorf("could not read response body: %w", httpError))
-			continue
+		for _, origin := range origins {
+			downloadURL := origin + pathName
+			req, err := http.NewRequest("GET", downloadURL, nil)
+			if err != nil {
+				fmt.Fprintf(w, "GET %s: %v", downloadURL, err)
+				continue
+			}
+			resp, err := httpClient.Do(req)
+			if err != nil {
+				fmt.Fprintf(w, "GET %s: %v", downloadURL, err)
+				continue
+			}
+			if resp.StatusCode != http.StatusOK {
+				resp.Body.Close()
+				fmt.Fprintf(w, "GET %s: non 200 status code %d (%s)", downloadURL, resp.StatusCode, resp.Status)
+				continue
+			}
+			successfulResponse = resp
+			break
 		}
-		_ = body // TODO: write zip file into driver directory.
-		break
+		if successfulResponse == nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "failed to download %s from all playwright origins", baseName)
+			return
+		}
+		defer successfulResponse.Body.Close()
+		file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "error opening file %s: %v", filePath, err)
+			return
+		}
+		var buf [32 * 1024]byte
+		var written int64
+		for {
+			bytesRead, readErr := file.Read(buf[:])
+			if bytesRead > 0 {
+				bytesWritten, writeErr := file.Write(buf[:bytesRead])
+				written += int64(bytesWritten)
+				fmt.Fprintf(w, "downloading to %s: %s", filePath, HumanReadableFileSize(written))
+				if writeErr != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					fmt.Fprintf(w, "error downloading to %s: %v", filePath, writeErr)
+					return
+				}
+			}
+			if readErr != nil {
+				if readErr != io.EOF {
+					w.WriteHeader(http.StatusInternalServerError)
+					fmt.Fprintf(w, "error downloading from %s: %v", successfulResponse.Request.URL.String(), readErr)
+					return
+				}
+				fmt.Fprintf(w, "download to %s complete", filePath)
+			}
+		}
 	}
 	// TODO: unzip the zip file in driver directory.
 	_ = svc.PlaywrightDriver.DownloadDriver
-	return nil
+	fmt.Fprintf(w, "hi")
 }
 
 func (service *BackendService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -175,18 +214,42 @@ func (service *BackendService) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	pathHead, pathTail, _ := strings.Cut(strings.Trim(urlPath, "/"), "/")
-	contextData := ContextData{
-		PathTail: pathTail,
-	}
 	switch pathHead {
 	case "driver":
-		service.driver(w, r, contextData)
+		if pathTail != "" {
+			http.Error(w, "Not Found", http.StatusNotFound)
+			return
+		}
+		service.driver(w, r)
 		return
 	case "installdriver":
-		service.installdriver(w, r, contextData)
+		if pathTail != "" {
+			http.Error(w, "Not Found", http.StatusNotFound)
+			return
+		}
+		service.installdriver(w, r)
 		return
 	default:
 		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
+}
+
+// HumanReadableFileSize returns a human readable file size of an int64 size in
+// bytes.
+func HumanReadableFileSize(size int64) string {
+	// https://yourbasic.org/golang/formatting-byte-size-to-human-readable-format/
+	if size < 0 {
+		return ""
+	}
+	const unit = 1000
+	if size < unit {
+		return fmt.Sprintf("%d B", size)
+	}
+	div, exp := int64(unit), 0
+	for n := size / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(size)/float64(div), "kMGTPE"[exp])
 }
