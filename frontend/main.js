@@ -3,10 +3,6 @@ import { Backend, UpdateEvent } from "./bindings/changeme";
 import "basecoat-css/basecoat";
 import "basecoat-css/all";
 
-Events.On("time", (time) => {
-  // timeElement.innerText = time.data;
-});
-
 (async function init() {
   let response = await fetch("/backend/driver/");
   if (!response.ok) {
@@ -14,54 +10,25 @@ Events.On("time", (time) => {
   } else {
     const driverData = await response.json();
     console.log(driverData);
+    if (driverData.currentVersion.includes(driverData.requiredVersion)) {
+      // TODO: spawn a new window
+      // Backend.SpawnWindow("installdriver", "/installdriver.html")
+      // TODO: disable window "main", wait until we receive a closewindow event for "installdriver" then we continue with the code to re-enable window "main" (right after resolving the promise).
+      if ("" != "") {
+        // TODO: wait until a backend:closewindow event for WindowEvent.name ==
+        // "installdriver" is emitted before calling the resolve() function().
+        await new Promise(function(resolve) {
+          const unregister = Events.On("backend:installdriverfinished", function() {
+            unregister();
+            resolve();
+          });
+        });
+      }
+    }
   }
   console.log(await Backend.Hello());
 })();
 
-/**
- * streamResponseLines is a generator function that streams over a response
- * body (returned by fetch()) line by line. Use it like this:
- * `for await (const line of streamResponseLines(response)) { ... }`.
- *
- * @param {Response} response
- */
-async function* streamResponseLines(response) {
-  const reader = response.body.getReader();
-  const textDecoder = new TextDecoder("utf-8");
-  let line = "";
-  let chunk = new Uint8Array();
-  // Read from the response body in chunks.
-  for (let readResult = await reader.read(); !readResult.done; readResult = await reader.read()) {
-    if (chunk.length > 0) {
-      // We have a carryover chunk from a previous iteration. There are
-      // guaranteed to be no newlines inside since the previous iteration's
-      // chunk.indexOf(10) would have caught it.
-      //
-      // Stream option has to be true because we haven't encountered a
-      // newline yet, more data may be decoded for the current line.
-      line += textDecoder.decode(chunk, { stream: true });
-    }
-    // Get the reader's current chunk.
-    chunk = readResult.value;
-    // Jump to each newline '\n' byte in the chunk. 10 is the ASCII/UTF-8
-    // decimal value of the '\n' byte.
-    for (let index = chunk.indexOf(10); index >= 0; index = chunk.indexOf(10)) {
-      // We found a newline, decode everything up to this index and consider
-      // that as a complete line and yield it.
-      line += textDecoder.decode(chunk.subarray(0, index));
-      yield line;
-      // Reset the line.
-      line = "";
-      // Shorten the chunk to exclude what we have already decoded.
-      chunk = chunk.subarray(index + 1);
-    }
-  }
-  // Flush any remainder bytes in the chunk.
-  if (chunk.length > 0) {
-    line += textDecoder.decode(chunk);
-    yield line;
-  }
-}
 const textarea = document.getElementById("textarea");
 document.addEventListener("backend:installdriver", async function() {
   const eventID = Math.random().toString(36).substring(2);
@@ -73,10 +40,11 @@ document.addEventListener("backend:installdriver", async function() {
   textarea.addEventListener("scroll", updateStickToBottom);
   textarea.value = "";
   const unregister = Events.On("backend:update", function(event) {
-    if (event.data.eventID != eventID) {
+    const updateEvent = new UpdateEvent(event.data);
+    if (updateEvent.eventID != eventID) {
       return;
     }
-    textarea.value += `${event.data.category}: ${event.data.message}\n`;
+    textarea.value += `${updateEvent.category}: ${updateEvent.message}\n`;
     if (stickToBottom) {
       textarea.scrollTop = textarea.scrollHeight;
     }

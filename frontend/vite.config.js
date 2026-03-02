@@ -14,7 +14,7 @@ export default defineConfig({
       input: {
         // https://vite.dev/guide/build.html#multi-page-app
         main: resolve(__dirname, "main.html"),
-        b: resolve(__dirname, "b.html"),
+        installdriver: resolve(__dirname, "installdriver.html"),
       }
     }
   },

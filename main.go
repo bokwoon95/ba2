@@ -19,7 +19,6 @@ import (
 var assets embed.FS
 
 func main() {
-	application.RegisterEvent[string]("time")
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatal(err)

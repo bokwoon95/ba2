@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -60,6 +61,6 @@ func (backend *Backend) driver(w http.ResponseWriter, r *http.Request) {
 		writeResponse(w, r, response)
 		return
 	}
-	response.CurrentVersion = string(output)
+	response.CurrentVersion = string(bytes.TrimSpace(output))
 	writeResponse(w, r, response)
 }

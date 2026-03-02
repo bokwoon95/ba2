@@ -13,7 +13,6 @@ declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
             "backend:update": main$0.UpdateEvent;
-            "time": string;
         }
     }
 }
