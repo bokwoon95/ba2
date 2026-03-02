@@ -373,9 +373,9 @@ func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
 	}
 	backend.App.Event.Emit("backend:update", UpdateEvent{
 		EventID:  eventID,
-		Category: "unzipped",
-		Message:  filePath,
+		Category: "success",
+		Message:  fmt.Sprintf("unzipped %s", filePath),
 	})
-	fmt.Fprintf(w, "unzipped: %s\n", filePath)
+	fmt.Fprintf(w, "success: unzipped %s\n", filePath)
 	responseController.Flush()
 }

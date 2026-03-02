@@ -64,11 +64,19 @@ async function* streamResponseLines(response) {
 }
 const textarea = document.getElementById("textarea");
 document.addEventListener("browserautomate:installdriver", async function() {
-  UpdateEvent
   textarea.value = "";
-  const response = await fetch("/backend/installdriver/", { method: "POST" });
-  for await (const line of streamResponseLines(response)) {
-    textarea.value += line + "\n";
+  const eventID = Math.random().toString(36).substring(2);
+  const response = await fetch(`/backend/installdriver/?eventID=${eventID}`, { method: "POST" });
+  if (response.ok) {
+    const unregister = Events.On("backend:update", function(event) {
+      if (event.data.eventID != eventID) {
+        return;
+      }
+      textarea.value += `${event.data.category}: ${event.data.message}\n`;
+      if (event.data.category == "error" || event.data.category == "success") {
+        unregister();
+      }
+    });
   }
 });
 
