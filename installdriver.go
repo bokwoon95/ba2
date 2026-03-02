@@ -268,6 +268,7 @@ func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, zipFile := range zipReader.File {
+		time.Sleep(50 * time.Millisecond)
 		backend.App.Event.Emit("backend:update", UpdateEvent{
 			EventID:  eventID,
 			Category: "unzipping",

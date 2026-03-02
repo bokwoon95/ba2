@@ -64,32 +64,30 @@ async function* streamResponseLines(response) {
 }
 const textarea = document.getElementById("textarea");
 document.addEventListener("backend:installdriver", async function() {
-  console.log("received backend:installdriver");
-  textarea.value = "";
   const eventID = Math.random().toString(36).substring(2);
-  const response = await fetch(`/backend/installdriver/?eventID=${eventID}`, { method: "POST" });
-  console.log(response);
-  //if (response.ok) {
-  //  const unregister = Events.On("backend:update", function(event) {
-  //    //if (event.data.eventID != eventID) {
-  //    //  return;
-  //    //}
-  //    textarea.value += `${event.data.category}: ${event.data.message}\n`;
-  //    if (event.data.category == "error" || event.data.category == "success") {
-  //      unregister();
-  //    }
-  //  });
-  //}
+  const promise = fetch(`/backend/installdriver/?eventID=${eventID}`, { method: "POST" });
+  let stickToBottom = true;
+  function updateStickToBottom() {
+    stickToBottom = textarea.scrollHeight - textarea.scrollTop - textarea.clientHeight <= 50 /* px tolerance */;
+  }
+  textarea.addEventListener("scroll", updateStickToBottom);
+  textarea.value = "";
+  const unregister = Events.On("backend:update", function(event) {
+    if (event.data.eventID != eventID) {
+      return;
+    }
+    textarea.value += `${event.data.category}: ${event.data.message}\n`;
+    if (stickToBottom) {
+      textarea.scrollTop = textarea.scrollHeight;
+    }
+  });
+  try {
+    await promise;
+  } finally {
+    unregister();
+    textarea.removeEventListener("scroll", updateStickToBottom);
+  }
 });
-
-// TODO: timing issue.
-    const unregister = Events.On("backend:update", function(event) {
-      console.log(event);
-      textarea.value += `${event.data.category}: ${event.data.message}\n`;
-      if (event.data.category == "error" || event.data.category == "success") {
-        unregister();
-      }
-    });
 
 /**
  * @type {Record<string, (element: Element, attributeValue: string) => void>}
