@@ -69,18 +69,27 @@ document.addEventListener("backend:installdriver", async function() {
   const eventID = Math.random().toString(36).substring(2);
   const response = await fetch(`/backend/installdriver/?eventID=${eventID}`, { method: "POST" });
   console.log(response);
-  if (response.ok) {
+  //if (response.ok) {
+  //  const unregister = Events.On("backend:update", function(event) {
+  //    //if (event.data.eventID != eventID) {
+  //    //  return;
+  //    //}
+  //    textarea.value += `${event.data.category}: ${event.data.message}\n`;
+  //    if (event.data.category == "error" || event.data.category == "success") {
+  //      unregister();
+  //    }
+  //  });
+  //}
+});
+
+// TODO: timing issue.
     const unregister = Events.On("backend:update", function(event) {
-      if (event.data.eventID != eventID) {
-        return;
-      }
+      console.log(event);
       textarea.value += `${event.data.category}: ${event.data.message}\n`;
       if (event.data.category == "error" || event.data.category == "success") {
         unregister();
       }
     });
-  }
-});
 
 /**
  * @type {Record<string, (element: Element, attributeValue: string) => void>}
