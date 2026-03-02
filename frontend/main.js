@@ -63,10 +63,12 @@ async function* streamResponseLines(response) {
   }
 }
 const textarea = document.getElementById("textarea");
-document.addEventListener("browserautomate:installdriver", async function() {
+document.addEventListener("backend:installdriver", async function() {
+  console.log("received backend:installdriver");
   textarea.value = "";
   const eventID = Math.random().toString(36).substring(2);
   const response = await fetch(`/backend/installdriver/?eventID=${eventID}`, { method: "POST" });
+  console.log(response);
   if (response.ok) {
     const unregister = Events.On("backend:update", function(event) {
       if (event.data.eventID != eventID) {
@@ -86,6 +88,7 @@ document.addEventListener("browserautomate:installdriver", async function() {
 const initFunctions = {
   "data-click-event": function initClickEvent(targetElement, attributeValue) {
     targetElement.addEventListener("click", function dispatchEventOnClick() {
+      console.log("dispatched " + attributeValue);
       document.dispatchEvent(new Event(attributeValue, { bubbles: true }));
     });
   },
