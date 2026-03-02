@@ -48,15 +48,15 @@ func main() {
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
 	})
-	backendService := &BackendService{
+	backend := &Backend{
 		App:                       app,
 		PlaywrightDriver:          playwrightDriver,
 		PlaywrightDriverDirectory: playwrightDriverDirectory,
 	}
 	go func() {
-		http.ListenAndServe("localhost:9246", backendService)
+		http.ListenAndServe("localhost:9246", backend)
 	}()
-	app.RegisterService(application.NewServiceWithOptions(backendService, application.ServiceOptions{
+	app.RegisterService(application.NewServiceWithOptions(backend, application.ServiceOptions{
 		Route: "/backend",
 	}))
 	window := app.Window.NewWithOptions(application.WebviewWindowOptions{

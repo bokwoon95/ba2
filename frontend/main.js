@@ -1,5 +1,5 @@
 import { Events } from "@wailsio/runtime";
-import { BackendService } from "./bindings/changeme";
+import { Backend, UpdateEvent } from "./bindings/changeme";
 import "basecoat-css/basecoat";
 import "basecoat-css/all";
 
@@ -15,7 +15,7 @@ Events.On("time", (time) => {
     const driverData = await response.json();
     console.log(driverData);
   }
-  console.log(await BackendService.Hello());
+  console.log(await Backend.Hello());
 })();
 
 /**
@@ -64,6 +64,7 @@ async function* streamResponseLines(response) {
 }
 const textarea = document.getElementById("textarea");
 document.addEventListener("browserautomate:installdriver", async function() {
+  UpdateEvent
   textarea.value = "";
   const response = await fetch("/backend/installdriver/", { method: "POST" });
   for await (const line of streamResponseLines(response)) {
