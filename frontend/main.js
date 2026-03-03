@@ -15,7 +15,10 @@ import "basecoat-css/all";
         Name: "installdriver",
         URL: "/installdriver.html",
       }));
+      // TODO: figure out how to not cause the backend to freak out when the
+      // frontend hot reloads and ends up spawning the same window.
       console.log("installdriver spawned");
+      Backend.EnableWindow("installdriver", false);
       await new Promise(function(resolve) {
         const unregister = Events.On("backend:windowclosed", function(event) {
           if (event.sender != "installdriver") {
@@ -23,9 +26,10 @@ import "basecoat-css/all";
           }
           unregister();
           resolve();
-          console.log("installdriver closed");
         });
       });
+      console.log("installdriver closed");
+      Backend.EnableWindow("installdriver", true);
     }
   }
   console.log(await Backend.Hello());
