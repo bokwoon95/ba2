@@ -11,6 +11,14 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as $models from "./models.js";
 
 /**
+ * @param {$models.WebviewWindowOptions} options
+ * @returns {$CancellablePromise<void>}
+ */
+export function CreateOrUpdateWindow(options) {
+    return $Call.ByID(1410783084, options);
+}
+
+/**
  * @param {string} name
  * @param {boolean} enabled
  * @returns {$CancellablePromise<void>}
@@ -24,12 +32,4 @@ export function EnableWindow(name, enabled) {
  */
 export function Hello() {
     return $Call.ByID(1531277936);
-}
-
-/**
- * @param {$models.WebviewWindowOptions} options
- * @returns {$CancellablePromise<void>}
- */
-export function SpawnWindow(options) {
-    return $Call.ByID(1335275143, options);
 }

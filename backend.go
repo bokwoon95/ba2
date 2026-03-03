@@ -28,6 +28,68 @@ type UpdateEvent struct {
 	Message  string `json:"message"`
 }
 
+var _ http.Handler = (*Backend)(nil)
+
+func (backend *Backend) Hello() string { return "hello" }
+
+func (backend *Backend) CreateOrUpdateWindow(options WebviewWindowOptions) error {
+	name := options.Name
+	backend.WindowsMutex.Lock()
+	defer backend.WindowsMutex.Unlock()
+	window, ok := backend.Windows[name]
+	if !ok {
+		window = backend.App.Window.NewWithOptions(application.WebviewWindowOptions{
+			Name:  options.Name,
+			Title: options.Title,
+			URL:   options.URL,
+		})
+		backend.Windows[name] = window
+	} else {
+		window.SetTitle(options.Title)
+		window.SetURL(options.URL)
+	}
+	window.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		backend.WindowsMutex.Lock()
+		defer backend.WindowsMutex.Unlock()
+		backend.App.Event.EmitEvent(&application.CustomEvent{
+			Name:   "backend:windowclosed",
+			Sender: name,
+		})
+		delete(backend.Windows, name)
+	})
+	return nil
+}
+
+func (backend *Backend) EnableWindow(name string, enabled bool) error {
+	backend.WindowsMutex.Lock()
+	defer backend.WindowsMutex.Unlock()
+	window, ok := backend.Windows[name]
+	if !ok {
+		return fmt.Errorf("no such window: %s", name)
+	}
+	window.SetEnabled(enabled)
+	return nil
+}
+
+// HumanReadableFileSize returns a human readable file size of an int64 size in
+// bytes.
+func HumanReadableFileSize(size int64) string {
+	// https://yourbasic.org/golang/formatting-byte-size-to-human-readable-format/
+	if size < 0 {
+		return ""
+	}
+	const unit = 1000
+	if size < unit {
+		return fmt.Sprintf("%d B", size)
+	}
+	div, exp := int64(unit), 0
+	for n := size / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(size)/float64(div), "kMGTPE"[exp])
+}
+
 type WebviewWindowOptions struct {
 	// Name is a unique identifier that can be given to a window.
 	Name string
@@ -158,63 +220,4 @@ type WebviewWindowOptions struct {
 	// On Windows/Linux, if true and no explicit window menu is set, the window
 	// will use the application menu. Defaults to false for backwards compatibility.
 	UseApplicationMenu bool
-}
-
-var _ http.Handler = (*Backend)(nil)
-
-func (backend *Backend) Hello() string { return "hello" }
-
-func (backend *Backend) SpawnWindow(options WebviewWindowOptions) error {
-	name := options.Name
-	backend.WindowsMutex.Lock()
-	defer backend.WindowsMutex.Unlock()
-	_, windowExists := backend.Windows[name]
-	if windowExists {
-		return fmt.Errorf("window already exists: %s", name)
-	}
-	window := backend.App.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name: options.Name,
-		URL:  options.URL,
-	})
-	backend.Windows[options.Name] = window
-	window.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
-		backend.WindowsMutex.Lock()
-		defer backend.WindowsMutex.Unlock()
-		backend.App.Event.EmitEvent(&application.CustomEvent{
-			Name:   "backend:windowclosed",
-			Sender: name,
-		})
-		delete(backend.Windows, name)
-	})
-	return nil
-}
-
-func (backend *Backend) EnableWindow(name string, enabled bool) error {
-	backend.WindowsMutex.Lock()
-	defer backend.WindowsMutex.Unlock()
-	window, ok := backend.Windows[name]
-	if !ok {
-		return fmt.Errorf("no such window: %s", name)
-	}
-	window.SetEnabled(enabled)
-	return nil
-}
-
-// HumanReadableFileSize returns a human readable file size of an int64 size in
-// bytes.
-func HumanReadableFileSize(size int64) string {
-	// https://yourbasic.org/golang/formatting-byte-size-to-human-readable-format/
-	if size < 0 {
-		return ""
-	}
-	const unit = 1000
-	if size < unit {
-		return fmt.Sprintf("%d B", size)
-	}
-	div, exp := int64(unit), 0
-	for n := size / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(size)/float64(div), "kMGTPE"[exp])
 }

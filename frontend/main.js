@@ -11,14 +11,12 @@ import "basecoat-css/all";
     const driverData = await response.json();
     console.log(driverData);
     if (driverData.currentVersion.includes(driverData.requiredVersion)) {
-      await Backend.SpawnWindow(new WebviewWindowOptions({
+      await Backend.CreateOrUpdateWindow(new WebviewWindowOptions({
         Name: "installdriver",
         URL: "/installdriver.html",
       }));
-      // TODO: figure out how to not cause the backend to freak out when the
-      // frontend hot reloads and ends up spawning the same window.
       console.log("installdriver spawned");
-      Backend.EnableWindow("installdriver", false);
+      Backend.EnableWindow("main", false);
       await new Promise(function(resolve) {
         const unregister = Events.On("backend:windowclosed", function(event) {
           if (event.sender != "installdriver") {
@@ -29,7 +27,7 @@ import "basecoat-css/all";
         });
       });
       console.log("installdriver closed");
-      Backend.EnableWindow("installdriver", true);
+      Backend.EnableWindow("main", true);
     }
   }
   console.log(await Backend.Hello());
