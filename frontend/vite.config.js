@@ -13,7 +13,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         // https://vite.dev/guide/build.html#multi-page-app
-        main: resolve(__dirname, "main.html"),
+        index: resolve(__dirname, "index.html"),
         installdriver: resolve(__dirname, "installdriver.html"),
       }
     }

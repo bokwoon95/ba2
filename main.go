@@ -67,7 +67,7 @@ func main() {
 			TitleBar:                application.MacTitleBarHiddenInset,
 		},
 		BackgroundColour: application.NewRGB(27, 38, 54),
-		URL:              "/main.html?foo=bar&foo=baz",
+		URL:              "/index.html?foo=bar&foo=baz",
 	})
 	backend.WindowsMutex.Lock()
 	backend.Windows["main"] = window
