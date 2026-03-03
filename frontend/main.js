@@ -7,28 +7,28 @@ import "basecoat-css/all";
   let response = await fetch("/backend/driver/");
   if (!response.ok) {
     console.error(response);
-  } else {
-    const driverData = await response.json();
-    console.log(driverData);
-    if (driverData.currentVersion.includes(driverData.requiredVersion)) {
-      await Backend.CreateWindow(new WebviewWindowOptions({
-        Name: "installdriver",
-        URL: "/installdriver.html",
-      }));
-      console.log("installdriver spawned");
-      Backend.EnableWindow("main", false);
-      await new Promise(function(resolve) {
-        const unregister = Events.On("backend:windowclosed", function(event) {
-          if (event.sender != "installdriver") {
-            return;
-          }
-          unregister();
-          resolve();
-        });
+    return;
+  }
+  const driverData = await response.json();
+  console.log(driverData);
+  if (driverData.currentVersion.includes(driverData.requiredVersion)) {
+    await Backend.CreateWindow(new WebviewWindowOptions({
+      Name: "installdriver",
+      URL: "/installdriver.html",
+    }));
+    console.log("installdriver spawned");
+    Backend.EnableWindow("main", false);
+    await new Promise(function(resolve) {
+      const unregister = Events.On("backend:windowclosed", function(event) {
+        if (event.sender != "installdriver") {
+          return;
+        }
+        unregister();
+        resolve();
       });
-      console.log("installdriver closed");
-      Backend.EnableWindow("main", true);
-    }
+    });
+    console.log("installdriver closed");
+    Backend.EnableWindow("main", true);
   }
   console.log(await Backend.Hello());
 })();
