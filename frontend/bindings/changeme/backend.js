@@ -14,8 +14,8 @@ import * as $models from "./models.js";
  * @param {$models.WebviewWindowOptions} options
  * @returns {$CancellablePromise<void>}
  */
-export function CreateOrUpdateWindow(options) {
-    return $Call.ByID(1410783084, options);
+export function CreateWindow(options) {
+    return $Call.ByID(544970000, options);
 }
 
 /**

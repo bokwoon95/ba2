@@ -32,7 +32,7 @@ var _ http.Handler = (*Backend)(nil)
 
 func (backend *Backend) Hello() string { return "hello" }
 
-func (backend *Backend) CreateOrUpdateWindow(options WebviewWindowOptions) error {
+func (backend *Backend) CreateWindow(options WebviewWindowOptions) error {
 	name := options.Name
 	backend.WindowsMutex.Lock()
 	defer backend.WindowsMutex.Unlock()

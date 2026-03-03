@@ -11,7 +11,7 @@ import "basecoat-css/all";
     const driverData = await response.json();
     console.log(driverData);
     if (driverData.currentVersion.includes(driverData.requiredVersion)) {
-      await Backend.CreateOrUpdateWindow(new WebviewWindowOptions({
+      await Backend.CreateWindow(new WebviewWindowOptions({
         Name: "installdriver",
         URL: "/installdriver.html",
       }));
