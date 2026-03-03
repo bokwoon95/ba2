@@ -19,6 +19,14 @@ export function CreateWindow(options) {
 }
 
 /**
+ * @param {$models.MessageDialogOptions} options
+ * @returns {$CancellablePromise<void>}
+ */
+export function Dialog(options) {
+    return $Call.ByID(1603189224, options);
+}
+
+/**
  * @param {string} name
  * @param {boolean} enabled
  * @returns {$CancellablePromise<void>}

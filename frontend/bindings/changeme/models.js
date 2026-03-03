@@ -10,6 +10,49 @@ import { Create as $Create } from "@wailsio/runtime";
 // @ts-ignore: Unused imports
 import * as application$0 from "../github.com/wailsapp/wails/v3/pkg/application/models.js";
 
+export class MessageDialogOptions {
+    /**
+     * Creates a new MessageDialogOptions instance.
+     * @param {Partial<MessageDialogOptions>} [$$source = {}] - The source object to create the MessageDialogOptions.
+     */
+    constructor($$source = {}) {
+        if (!("DialogType" in $$source)) {
+            /**
+             * Info|Question|Warning|Error
+             * @member
+             * @type {string}
+             */
+            this["DialogType"] = "";
+        }
+        if (!("Title" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["Title"] = "";
+        }
+        if (!("Message" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["Message"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MessageDialogOptions instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {MessageDialogOptions}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new MessageDialogOptions(/** @type {Partial<MessageDialogOptions>} */($$parsedSource));
+    }
+}
+
 export class UpdateEvent {
     /**
      * Creates a new UpdateEvent instance.

@@ -32,6 +32,23 @@ var _ http.Handler = (*Backend)(nil)
 
 func (backend *Backend) Hello() string { return "hello" }
 
+func (backend *Backend) Dialog(options MessageDialogOptions) {
+	var messageDialog *application.MessageDialog
+	switch options.DialogType {
+	case "Info":
+		messageDialog = backend.App.Dialog.Info()
+	case "Question":
+		messageDialog = backend.App.Dialog.Question()
+	case "Warning":
+		messageDialog = backend.App.Dialog.Warning()
+	default:
+		messageDialog = backend.App.Dialog.Error()
+	}
+	messageDialog.SetTitle(options.Title)
+	messageDialog.SetMessage(options.Message)
+	messageDialog.Show()
+}
+
 func (backend *Backend) CreateWindow(options WebviewWindowOptions) error {
 	name := options.Name
 	backend.WindowsMutex.Lock()
@@ -220,4 +237,10 @@ type WebviewWindowOptions struct {
 	// On Windows/Linux, if true and no explicit window menu is set, the window
 	// will use the application menu. Defaults to false for backwards compatibility.
 	UseApplicationMenu bool
+}
+
+type MessageDialogOptions struct {
+	DialogType string // Info|Question|Warning|Error
+	Title      string
+	Message    string
 }

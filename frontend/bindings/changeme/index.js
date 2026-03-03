@@ -8,6 +8,7 @@ export {
 };
 
 export {
+    MessageDialogOptions,
     UpdateEvent,
     WebviewWindowOptions
 } from "./models.js";

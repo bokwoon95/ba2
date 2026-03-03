@@ -1,37 +1,51 @@
 import { Events } from "@wailsio/runtime";
-import { Backend, UpdateEvent, WebviewWindowOptions } from "./bindings/changeme";
+import {
+  Backend,
+  UpdateEvent,
+  WebviewWindowOptions,
+  MessageDialogOptions,
+} from "./bindings/changeme";
 import "basecoat-css/basecoat";
 import "basecoat-css/all";
 
 (async function init() {
   let response = await fetch("/backend/driver/");
   if (!response.ok) {
-    console.error(response);
-    return;
-  }
-  const driverData = await response.json();
-  console.log(driverData);
-  if (driverData.currentVersion.includes(driverData.requiredVersion)) {
-    await Backend.CreateWindow(new WebviewWindowOptions({
-      Name: "installdriver",
-      URL: "/installdriver.html",
+    Backend.Dialog(new MessageWindowOptions({
+      Message: `fetching driver details: ${response.statusText}`,
     }));
-    console.log("installdriver spawned");
-    Backend.EnableWindow("main", false);
-    await new Promise(function(resolve) {
-      const unregister = Events.On("backend:windowclosed", function(event) {
-        if (event.sender != "installdriver") {
-          return;
-        }
-        unregister();
-        resolve();
+  } else {
+    const driverData = await response.json();
+    console.log(driverData);
+    if (driverData.currentVersion.includes(driverData.requiredVersion)) {
+      await Backend.CreateWindow(new WebviewWindowOptions({
+        Name: "installdriver",
+        URL: "/installdriver.html",
+      }));
+      console.log("installdriver spawned");
+      Backend.EnableWindow("main", false);
+      await new Promise(function(resolve) {
+        const unregister = Events.On("backend:windowclosed", function(event) {
+          if (event.sender != "installdriver") {
+            return;
+          }
+          unregister();
+          resolve();
+        });
       });
-    });
-    console.log("installdriver closed");
-    Backend.EnableWindow("main", true);
+      console.log("installdriver closed");
+      Backend.EnableWindow("main", true);
+    }
   }
   console.log(await Backend.Hello());
 })();
+
+document.addEventListener("backend:connect", function() {
+  Backend.Dialog(new MessageDialogOptions({
+    Title: "Info",
+    Message: "Hi there",
+  }));
+});
 
 const textarea = document.getElementById("textarea");
 document.addEventListener("backend:installdriver", async function() {
