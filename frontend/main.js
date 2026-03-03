@@ -1,5 +1,5 @@
 import { Events } from "@wailsio/runtime";
-import { Backend, UpdateEvent } from "./bindings/changeme";
+import { Backend, UpdateEvent, WebviewWindowOptions } from "./bindings/changeme";
 import "basecoat-css/basecoat";
 import "basecoat-css/all";
 
@@ -11,19 +11,21 @@ import "basecoat-css/all";
     const driverData = await response.json();
     console.log(driverData);
     if (driverData.currentVersion.includes(driverData.requiredVersion)) {
-      // TODO: spawn a new window
-      // Backend.SpawnWindow("installdriver", "/installdriver.html")
-      // TODO: disable window "main", wait until we receive a closewindow event for "installdriver" then we continue with the code to re-enable window "main" (right after resolving the promise).
-      if ("" != "") {
-        // TODO: wait until a backend:closewindow event for WindowEvent.name ==
-        // "installdriver" is emitted before calling the resolve() function().
-        await new Promise(function(resolve) {
-          const unregister = Events.On("backend:installdriverfinished", function() {
-            unregister();
-            resolve();
-          });
+      await Backend.SpawnWindow(new WebviewWindowOptions({
+        Name: "installdriver",
+        URL: "/installdriver.html",
+      }));
+      console.log("installdriver spawned");
+      await new Promise(function(resolve) {
+        const unregister = Events.On("backend:windowclosed", function(event) {
+          if (event.sender != "installdriver") {
+            return;
+          }
+          unregister();
+          resolve();
+          console.log("installdriver closed");
         });
-      }
+      });
     }
   }
   console.log(await Backend.Hello());

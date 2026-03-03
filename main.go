@@ -51,6 +51,7 @@ func main() {
 		App:                       app,
 		PlaywrightDriver:          playwrightDriver,
 		PlaywrightDriverDirectory: playwrightDriverDirectory,
+		Windows:                   make(map[string]*application.WebviewWindow),
 	}
 	go func() {
 		http.ListenAndServe("localhost:9246", backend)
@@ -66,10 +67,11 @@ func main() {
 			TitleBar:                application.MacTitleBarHiddenInset,
 		},
 		BackgroundColour: application.NewRGB(27, 38, 54),
-		URL:              "/main.html",
+		URL:              "/main.html?foo=bar&foo=baz",
 	})
-	_ = window
-	// window.Show()
+	backend.WindowsMutex.Lock()
+	backend.Windows["main"] = window
+	backend.WindowsMutex.Unlock()
 	go func() {
 		for {
 			now := time.Now().Format(time.RFC1123)

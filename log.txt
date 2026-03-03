@@ -1,9 +1,6 @@
 npx @tailwindcss/cli --input ./frontend/public/styles.css --output ./frontend/public/styles.min.css --watch=always
 wgo -xdir . wails3 dev :: wgo -dir ./fontend -cd ./frontend npx @tailwindcss/cli --input ./public/styles.css --output ./public/styles.min.css --watch=always
 
-DONE: expose the BackendService router at localhost:9246 so we can make get and post requests to it
-    TODO: will we be able to send a POST request to /backend/driver/install in a GUI HTTP Client and somehow see its streaming response in real time?
-
 GET /backend/driver {"currentVersion":"","requiredVersion":""}
 POST /backend/driver/install <streams download progress>
 POST /backend/driver/install

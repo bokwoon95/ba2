@@ -12,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // playwrightCDNMirrors is copied from playwright-go.
@@ -37,10 +39,13 @@ func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
 	writeResponse := func(w http.ResponseWriter, category string, message string) {
 		fmt.Fprintln(w, category+": "+message)
 		responseController.Flush()
-		backend.App.Event.Emit("backend:update", UpdateEvent{
-			EventID:  eventID,
-			Category: category,
-			Message:  message,
+		backend.App.Event.EmitEvent(&application.CustomEvent{
+			Name: "backend:update",
+			Data: UpdateEvent{
+				EventID:  eventID,
+				Category: category,
+				Message:  message,
+			},
 		})
 	}
 	platform := ""
