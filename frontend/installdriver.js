@@ -12,7 +12,7 @@ function initialize() {
 
 const infoMessage = document.getElementById("infoMessage");
 document.addEventListener("frontend:render", function() {
-  const needInstall = currentVersionField.value == "" || !currentVersionField.value.includes(requiredVersionField.value) || true;
+  const needInstall = currentVersionField.value == "" || !currentVersionField.value.includes(requiredVersionField.value);
   infoMessage.textContent = needInstall ? "Driver is missing or out of date, please install" : "Driver is up to date";
 });
 document.addEventListener("frontend:installdriver", function() {
@@ -24,7 +24,7 @@ document.addEventListener("frontend:installdriverdone", function() {
 
 const installDriverButton = document.getElementById("installDriverButton");
 document.addEventListener("frontend:render", function() {
-  const needInstall = currentVersionField.value == "" || !currentVersionField.value.includes(requiredVersionField.value) || true;
+  const needInstall = currentVersionField.value == "" || !currentVersionField.value.includes(requiredVersionField.value);
   installDriverButton.style.display = needInstall ? "" : "none";
 });
 document.addEventListener("frontend:installdriver", function() {
@@ -45,7 +45,7 @@ document.addEventListener("frontend:installdriverdone", function() {
 
 const closeWindowButton = document.getElementById("closeWindowButton");
 document.addEventListener("frontend:render", function() {
-  const needInstall = currentVersionField.value == "" || !currentVersionField.value.includes(requiredVersionField.value) || true;
+  const needInstall = currentVersionField.value == "" || !currentVersionField.value.includes(requiredVersionField.value);
   closeWindowButton.style.display = needInstall ? "none" : "";
 });
 document.addEventListener("frontend:installdriverdone", function() {
