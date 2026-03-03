@@ -11,7 +11,7 @@ import "basecoat-css/all";
 (async function init() {
   let response = await fetch("/backend/driver/");
   if (!response.ok) {
-    Backend.Dialog(new MessageWindowOptions({
+    Backend.Dialog(new MessageDialogOptions({
       Message: `fetching driver details: ${response.statusText}`,
     }));
   } else {
