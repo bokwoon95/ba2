@@ -22,17 +22,26 @@ var playwrightCDNMirrors = []string{
 }
 
 func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
-	responseController := http.NewResponseController(w)
+	if r.Method != "POST" {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	eventID := r.Form.Get("eventID")
 	if eventID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, "MissingEventID")
+		return
+	}
+	responseController := http.NewResponseController(w)
+	writeResponse := func(w http.ResponseWriter, category string, message string) {
+		fmt.Fprintln(w, category+": "+message)
+		responseController.Flush()
 		backend.App.Event.Emit("backend:update", UpdateEvent{
 			EventID:  eventID,
-			Category: "error",
-			Message:  "missing eventID",
+			Category: category,
+			Message:  message,
 		})
-		fmt.Fprintf(w, "error: missing eventID\n")
-		responseController.Flush()
-		return
 	}
 	platform := ""
 	switch runtime.GOOS {
@@ -53,13 +62,7 @@ func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
 	}
 	err := os.MkdirAll(backend.PlaywrightDriverDirectory, 0755)
 	if err != nil {
-		backend.App.Event.Emit("backend:update", UpdateEvent{
-			EventID:  eventID,
-			Category: "error",
-			Message:  fmt.Sprintf("creating directory %s: %v", backend.PlaywrightDriverDirectory, err),
-		})
-		fmt.Fprintf(w, "error: creating directory %s: %v\n", backend.PlaywrightDriverDirectory, err)
-		responseController.Flush()
+		writeResponse(w, "error", fmt.Sprintf("creating directory %s: %v", backend.PlaywrightDriverDirectory, err))
 		return
 	}
 	baseName := fmt.Sprintf("playwright-%s-%s.zip", backend.PlaywrightDriver.Version, platform)
@@ -68,13 +71,7 @@ func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
 	needDownloadFile := false
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
-			backend.App.Event.Emit("backend:update", UpdateEvent{
-				EventID:  eventID,
-				Category: "error",
-				Message:  fmt.Sprintf("fetching file info for %s: %v", filePath, err),
-			})
-			fmt.Fprintf(w, "error: fetching file info for %s: %v\n", filePath, err)
-			responseController.Flush()
+			writeResponse(w, "error", fmt.Sprintf("fetching file info for %s: %v", filePath, err))
 			return
 		}
 		needDownloadFile = true
@@ -102,76 +99,34 @@ func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, origin := range origins {
 			downloadURL := origin + pathName
-			backend.App.Event.Emit("backend:update", UpdateEvent{
-				EventID:  eventID,
-				Category: "info",
-				Message:  fmt.Sprintf("attempting to download from %s", downloadURL),
-			})
-			fmt.Fprintf(w, "info: attempting to download from %s\n", downloadURL)
-			responseController.Flush()
+			writeResponse(w, "info", fmt.Sprintf("attempting to download from %s", downloadURL))
 			req, err := http.NewRequest("GET", downloadURL, nil)
 			if err != nil {
-				backend.App.Event.Emit("backend:update", UpdateEvent{
-					EventID:  eventID,
-					Category: "info",
-					Message:  fmt.Sprintf("info: GET %s: %v", downloadURL, err),
-				})
-				fmt.Fprintf(w, "info: GET %s: %v\n", downloadURL, err)
-				responseController.Flush()
+				writeResponse(w, "info", fmt.Sprintf("info: GET %s: %v", downloadURL, err))
 				continue
 			}
 			resp, err := httpClient.Do(req)
 			if err != nil {
-				backend.App.Event.Emit("backend:update", UpdateEvent{
-					EventID:  eventID,
-					Category: "info",
-					Message:  fmt.Sprintf("info: GET %s: %v", downloadURL, err),
-				})
-				fmt.Fprintf(w, "info: GET %s: %v\n", downloadURL, err)
-				responseController.Flush()
+				writeResponse(w, "info", fmt.Sprintf("info: GET %s: %v", downloadURL, err))
 				continue
 			}
 			if resp.StatusCode != http.StatusOK {
 				resp.Body.Close()
-				backend.App.Event.Emit("backend:update", UpdateEvent{
-					EventID:  eventID,
-					Category: "info",
-					Message:  fmt.Sprintf("GET %s: non 200 status code %d (%s)", downloadURL, resp.StatusCode, resp.Status),
-				})
-				fmt.Fprintf(w, "info: GET %s: non 200 status code %d (%s)\n", downloadURL, resp.StatusCode, resp.Status)
-				responseController.Flush()
+				writeResponse(w, "info", fmt.Sprintf("GET %s: non 200 status code %d (%s)", downloadURL, resp.StatusCode, resp.Status))
 				continue
 			}
 			successfulResponse = resp
 			break
 		}
 		if successfulResponse == nil {
-			backend.App.Event.Emit("backend:update", UpdateEvent{
-				EventID:  eventID,
-				Category: "error",
-				Message:  fmt.Sprintf("error: failed to download %s from all playwright origins", baseName),
-			})
-			fmt.Fprintf(w, "error: failed to download %s from all playwright origins\n", baseName)
-			responseController.Flush()
+			writeResponse(w, "error", fmt.Sprintf("error: failed to download %s from all playwright origins", baseName))
 			return
 		}
-		backend.App.Event.Emit("backend:update", UpdateEvent{
-			EventID:  eventID,
-			Category: "info",
-			Message:  fmt.Sprintf("downloading from %s", successfulResponse.Request.URL.String()),
-		})
-		fmt.Fprintf(w, "info: downloading from %s\n", successfulResponse.Request.URL.String())
-		responseController.Flush()
+		writeResponse(w, "info", fmt.Sprintf("downloading from %s", successfulResponse.Request.URL.String()))
 		defer successfulResponse.Body.Close()
 		file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
-			backend.App.Event.Emit("backend:update", UpdateEvent{
-				EventID:  eventID,
-				Category: "error",
-				Message:  fmt.Sprintf("opening file for writing %s: %v", filePath, err),
-			})
-			fmt.Fprintf(w, "error: opening file for writing %s: %v\n", filePath, err)
-			responseController.Flush()
+			writeResponse(w, "error", fmt.Sprintf("opening file for writing %s: %v", filePath, err))
 			return
 		}
 		defer file.Close()
@@ -182,200 +137,92 @@ func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
 			if bytesRead > 0 {
 				bytesWritten, writeErr := file.Write(buf[:bytesRead])
 				written += int64(bytesWritten)
-				backend.App.Event.Emit("backend:update", UpdateEvent{
-					EventID:  eventID,
-					Category: "downloading",
-					Message:  fmt.Sprintf("%d", written),
-				})
-				fmt.Fprintf(w, "downloading: %d\n", written)
-				responseController.Flush()
+				writeResponse(w, "downloading", fmt.Sprintf("%d", written))
 				if writeErr != nil {
-					backend.App.Event.Emit("backend:update", UpdateEvent{
-						EventID:  eventID,
-						Category: "error",
-						Message:  fmt.Sprintf("downloading to %s: %v", filePath, writeErr),
-					})
-					fmt.Fprintf(w, "error: downloading to %s: %v\n", filePath, writeErr)
-					responseController.Flush()
+					writeResponse(w, "error", fmt.Sprintf("downloading to %s: %v", filePath, writeErr))
 					return
 				}
 			}
 			if readErr != nil {
 				if readErr != io.EOF {
-					backend.App.Event.Emit("backend:update", UpdateEvent{
-						EventID:  eventID,
-						Category: "error",
-						Message:  fmt.Sprintf("downloading from %s: %v", successfulResponse.Request.URL.String(), readErr),
-					})
-					fmt.Fprintf(w, "error: downloading from %s: %v\n", successfulResponse.Request.URL.String(), readErr)
-					responseController.Flush()
+					writeResponse(w, "error", fmt.Sprintf("downloading from %s: %v", successfulResponse.Request.URL.String(), readErr))
 					return
 				}
-				backend.App.Event.Emit("backend:update", UpdateEvent{
-					EventID:  eventID,
-					Category: "downloaded",
-					Message:  fmt.Sprintf("%d %s", written, filePath),
-				})
-				fmt.Fprintf(w, "downloaded: %d %s\n", written, filePath)
-				responseController.Flush()
+				writeResponse(w, "downloaded", fmt.Sprintf("%d %s", written, filePath))
 				break
 			}
 		}
 		err = file.Close()
 		if err != nil {
-			backend.App.Event.Emit("backend:update", UpdateEvent{
-				EventID:  eventID,
-				Category: "error",
-				Message:  fmt.Sprintf("saving to %s: %v", filePath, err),
-			})
-			fmt.Fprintf(w, "error: saving to %s: %v\n", filePath, err)
-			responseController.Flush()
+			writeResponse(w, "error", fmt.Sprintf("saving to %s: %v", filePath, err))
 			return
 		}
 	}
 	file, err := os.Open(filePath)
 	if err != nil {
-		backend.App.Event.Emit("backend:update", UpdateEvent{
-			EventID:  eventID,
-			Category: "error",
-			Message:  fmt.Sprintf("opening file for reading %s: %v", filePath, err),
-		})
-		fmt.Fprintf(w, "error: opening file for reading %s: %v\n", filePath, err)
-		responseController.Flush()
+		writeResponse(w, "error", fmt.Sprintf("opening file for reading %s: %v", filePath, err))
 		return
 	}
 	defer file.Close()
 	fileInfo, err = file.Stat()
 	if err != nil {
-		backend.App.Event.Emit("backend:update", UpdateEvent{
-			EventID:  eventID,
-			Category: "error",
-			Message:  fmt.Sprintf("fetching file info for %s: %v", filePath, err),
-		})
-		fmt.Fprintf(w, "error: fetching file info for %s: %v\n", filePath, err)
-		responseController.Flush()
+		writeResponse(w, "error", fmt.Sprintf("fetching file info for %s: %v", filePath, err))
 		return
 	}
 	zipReader, err := zip.NewReader(file, fileInfo.Size())
 	if err != nil {
-		backend.App.Event.Emit("backend:update", UpdateEvent{
-			EventID:  eventID,
-			Category: "error",
-			Message:  fmt.Sprintf("reading zip file %s: %v", filePath, err),
-		})
-		fmt.Fprintf(w, "error: reading zip file %s: %v\n", filePath, err)
-		responseController.Flush()
+		writeResponse(w, "error", fmt.Sprintf("reading zip file %s: %v", filePath, err))
 		return
 	}
 	for _, zipFile := range zipReader.File {
-		time.Sleep(50 * time.Millisecond)
-		backend.App.Event.Emit("backend:update", UpdateEvent{
-			EventID:  eventID,
-			Category: "unzipping",
-			Message:  fmt.Sprintf("%d %s", zipFile.UncompressedSize64, zipFile.Name),
-		})
-		fmt.Fprintf(w, "unzipping: %d %s\n", zipFile.UncompressedSize64, zipFile.Name)
-		responseController.Flush()
+		time.Sleep(50 * time.Millisecond) // TODO: remove this artificial delay
+		writeResponse(w, "unzipping", fmt.Sprintf("%d %s", zipFile.UncompressedSize64, zipFile.Name))
 		destFilePath := filepath.Join(backend.PlaywrightDriverDirectory, zipFile.Name)
 		if zipFile.FileInfo().IsDir() {
 			err := os.MkdirAll(destFilePath, 0755)
 			if err != nil {
-				backend.App.Event.Emit("backend:update", UpdateEvent{
-					EventID:  eventID,
-					Category: "error",
-					Message:  fmt.Sprintf("creating folder %s: %v", destFilePath, err),
-				})
-				fmt.Fprintf(w, "error: creating folder %s: %v\n", destFilePath, err)
-				responseController.Flush()
+				writeResponse(w, "error", fmt.Sprintf("creating folder %s: %v", destFilePath, err))
 				return
 			}
 			continue
 		}
 		srcFile, err := zipFile.Open()
 		if err != nil {
-			backend.App.Event.Emit("backend:update", UpdateEvent{
-				EventID:  eventID,
-				Category: "error",
-				Message:  fmt.Sprintf("opening file for reading %s: %v", zipFile.Name, err),
-			})
-			fmt.Fprintf(w, "error: opening file for reading %s: %v\n", zipFile.Name, err)
-			responseController.Flush()
+			writeResponse(w, "error", fmt.Sprintf("opening file for reading %s: %v", zipFile.Name, err))
 			return
 		}
 		destFile, err := os.OpenFile(destFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
-			backend.App.Event.Emit("backend:update", UpdateEvent{
-				EventID:  eventID,
-				Category: "error",
-				Message:  fmt.Sprintf("opening file for writing %s: %v", destFilePath, err),
-			})
-			fmt.Fprintf(w, "error: opening file for writing %s: %v\n", destFilePath, err)
-			responseController.Flush()
+			writeResponse(w, "error", fmt.Sprintf("opening file for writing %s: %v", destFilePath, err))
 			return
 		}
 		_, err = io.Copy(destFile, srcFile)
 		if err != nil {
-			backend.App.Event.Emit("backend:update", UpdateEvent{
-				EventID:  eventID,
-				Category: "error",
-				Message:  fmt.Sprintf("unzipping %s: %v", zipFile.Name, err),
-			})
-			fmt.Fprintf(w, "error: unzipping %s: %v\n", zipFile.Name, err)
-			responseController.Flush()
+			writeResponse(w, "error", fmt.Sprintf("unzipping %s: %v", zipFile.Name, err))
 			return
 		}
 		err = destFile.Close()
 		if err != nil {
-			backend.App.Event.Emit("backend:update", UpdateEvent{
-				EventID:  eventID,
-				Category: "error",
-				Message:  fmt.Sprintf("closing %s: %v", destFilePath, err),
-			})
-			fmt.Fprintf(w, "error: closing %s: %v\n", destFilePath, err)
-			responseController.Flush()
+			writeResponse(w, "error", fmt.Sprintf("closing %s: %v", destFilePath, err))
 			return
 		}
 		err = srcFile.Close()
 		if err != nil {
-			backend.App.Event.Emit("backend:update", UpdateEvent{
-				EventID:  eventID,
-				Category: "error",
-				Message:  fmt.Sprintf("closing %s: %v", zipFile.Name, err),
-			})
-			fmt.Fprintf(w, "error: closing %s: %v\n", zipFile.Name, err)
-			responseController.Flush()
+			writeResponse(w, "error", fmt.Sprintf("closing %s: %v", zipFile.Name, err))
 			return
 		}
 		if zipFile.Mode().Perm()&0111 != 0 && runtime.GOOS != "windows" {
 			fileInfo, err := os.Stat(destFilePath)
 			if err != nil {
-				backend.App.Event.Emit("backend:update", UpdateEvent{
-					EventID:  eventID,
-					Category: "error",
-					Message:  fmt.Sprintf("fetching file info for %s: %v", destFilePath, err),
-				})
-				fmt.Fprintf(w, "error: fetching file info for %s: %v\n", destFilePath, err)
-				responseController.Flush()
+				writeResponse(w, "error", fmt.Sprintf("fetching file info for %s: %v", destFilePath, err))
 				return
 			}
 			err = os.Chmod(destFilePath, fileInfo.Mode()|0111)
 			if err != nil {
-				backend.App.Event.Emit("backend:update", UpdateEvent{
-					EventID:  eventID,
-					Category: "error",
-					Message:  fmt.Sprintf("making file executable %s: %v", destFilePath, err),
-				})
-				fmt.Fprintf(w, "error: making file executable %s: %v\n", destFilePath, err)
-				responseController.Flush()
+				writeResponse(w, "error", fmt.Sprintf("making file executable %s: %v", destFilePath, err))
 				return
 			}
 		}
 	}
-	backend.App.Event.Emit("backend:update", UpdateEvent{
-		EventID:  eventID,
-		Category: "success",
-		Message:  fmt.Sprintf("unzipped %s", filePath),
-	})
-	fmt.Fprintf(w, "success: unzipped %s\n", filePath)
-	responseController.Flush()
+	writeResponse(w, "success", fmt.Sprintf("unzipped %s", filePath))
 }
