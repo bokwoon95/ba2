@@ -180,7 +180,6 @@ func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, zipFile := range zipReader.File {
-		time.Sleep(50 * time.Millisecond) // TODO: remove this artificial delay
 		writeResponse(w, "unzipping", fmt.Sprintf("%d %s", zipFile.UncompressedSize64, zipFile.Name))
 		destFilePath := filepath.Join(backend.PlaywrightDriverDirectory, zipFile.Name)
 		if zipFile.FileInfo().IsDir() {

@@ -11,6 +11,14 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as $models from "./models.js";
 
 /**
+ * @param {string} name
+ * @returns {$CancellablePromise<void>}
+ */
+export function CloseWindow(name) {
+    return $Call.ByID(2212387040, name);
+}
+
+/**
  * @param {$models.WebviewWindowOptions} options
  * @returns {$CancellablePromise<void>}
  */

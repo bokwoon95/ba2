@@ -78,6 +78,17 @@ func (backend *Backend) CreateWindow(options WebviewWindowOptions) error {
 	return nil
 }
 
+func (backend *Backend) CloseWindow(name string) error {
+	backend.WindowsMutex.Lock()
+	defer backend.WindowsMutex.Unlock()
+	window, ok := backend.Windows[name]
+	if !ok {
+		return fmt.Errorf("no such window: %s", name)
+	}
+	window.Close()
+	return nil
+}
+
 func (backend *Backend) EnableWindow(name string, enabled bool) error {
 	backend.WindowsMutex.Lock()
 	defer backend.WindowsMutex.Unlock()
