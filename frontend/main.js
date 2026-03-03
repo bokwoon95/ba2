@@ -35,6 +35,7 @@ import "basecoat-css/all";
       });
       console.log("installdriver closed");
       Backend.EnableWindow("main", true);
+      Backend.FocusWindow("main");
     }
   }
   console.log(await Backend.Hello());

@@ -36,8 +36,25 @@ export function EnableWindow(name, enabled) {
 }
 
 /**
+ * @param {string} name
+ * @returns {$CancellablePromise<void>}
+ */
+export function FocusWindow(name) {
+    return $Call.ByID(711930652, name);
+}
+
+/**
  * @returns {$CancellablePromise<string>}
  */
 export function Hello() {
     return $Call.ByID(1531277936);
+}
+
+/**
+ * @param {string} name
+ * @param {boolean} show
+ * @returns {$CancellablePromise<void>}
+ */
+export function ShowWindow(name, show) {
+    return $Call.ByID(392917569, name, show);
 }

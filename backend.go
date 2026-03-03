@@ -64,6 +64,7 @@ func (backend *Backend) CreateWindow(options WebviewWindowOptions) error {
 	} else {
 		window.SetTitle(options.Title)
 		window.SetURL(options.URL)
+		window.Show()
 	}
 	window.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		backend.WindowsMutex.Lock()
@@ -85,6 +86,32 @@ func (backend *Backend) EnableWindow(name string, enabled bool) error {
 		return fmt.Errorf("no such window: %s", name)
 	}
 	window.SetEnabled(enabled)
+	return nil
+}
+
+func (backend *Backend) ShowWindow(name string, show bool) error {
+	backend.WindowsMutex.Lock()
+	defer backend.WindowsMutex.Unlock()
+	window, ok := backend.Windows[name]
+	if !ok {
+		return fmt.Errorf("no such window: %s", name)
+	}
+	if show {
+		window.Show()
+	} else {
+		window.Hide()
+	}
+	return nil
+}
+
+func (backend *Backend) FocusWindow(name string) error {
+	backend.WindowsMutex.Lock()
+	defer backend.WindowsMutex.Unlock()
+	window, ok := backend.Windows[name]
+	if !ok {
+		return fmt.Errorf("no such window: %s", name)
+	}
+	window.Focus()
 	return nil
 }
 
