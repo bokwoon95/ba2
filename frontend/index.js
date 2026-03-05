@@ -38,6 +38,9 @@ import "basecoat-css/all";
       Backend.FocusWindow("main");
     }
   }
+  // How to check if we are connected to a browser? Is the browser already
+  // open? Can we preemptively connect to it? If not, how to tell the user to
+  // connect to it?
   console.log(await Backend.Hello());
 })();
 

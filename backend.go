@@ -16,6 +16,7 @@ func init() {
 
 type Backend struct {
 	App                       *application.App
+	Playwright                *playwright.Playwright
 	PlaywrightDriver          *playwright.PlaywrightDriver
 	PlaywrightDriverDirectory string
 	Windows                   map[string]*application.WebviewWindow
