@@ -17,7 +17,7 @@ import "basecoat-css/all";
   } else {
     const driverData = await response.json();
     console.log(driverData);
-    if (!driverData.currentVersion.includes(driverData.requiredVersion)) {
+    if (!driverData.currentVersion.includes(driverData.requiredVersion) || true) {
       const params = new URLSearchParams();
       params.append("currentVersion", driverData.currentVersion);
       params.append("requiredVersion", driverData.requiredVersion);

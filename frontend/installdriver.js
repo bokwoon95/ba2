@@ -1,18 +1,23 @@
 import { Events, Window } from "@wailsio/runtime";
 import { Backend, UpdateEvent } from "./bindings/changeme";
 
-const currentVersionField = document.getElementById("currentVersion");
-const requiredVersionField = document.getElementById("requiredVersion");
-function initialize() {
-  const params = new URLSearchParams(window.location.search);
-  currentVersionField.value = params.get("currentVersion");
-  requiredVersionField.value = params.get("requiredVersion");
-  document.dispatchEvent(new Event("frontend:render", { bubbles: true }));
-}
+const state = {
+  currentVersion: "",
+  requiredVersion: "",
+  init: function() {
+    const params = new URLSearchParams(window.location.search);
+    this.currentVersion = params.get("currentVersion") || "";
+    this.currentVersion = params.get("requiredVersion") || "";
+    document.dispatchEvent(new Event("frontend:render", { bubbles: true }));
+  },
+  needInstall: function() {
+    return this.currentVersion == "" || this.currentVersion.includes(this.requiredVersion);
+  },
+};
 
 const infoMessage = document.getElementById("infoMessage");
 document.addEventListener("frontend:render", function() {
-  const needInstall = currentVersionField.value == "" || !currentVersionField.value.includes(requiredVersionField.value);
+  const needInstall = state.needInstall();
   infoMessage.textContent = needInstall ? "Driver is missing or out of date, please install" : "Driver is up to date";
 });
 document.addEventListener("frontend:installdriver", function() {
@@ -24,7 +29,7 @@ document.addEventListener("frontend:installdriverdone", function() {
 
 const installDriverButton = document.getElementById("installDriverButton");
 document.addEventListener("frontend:render", function() {
-  const needInstall = currentVersionField.value == "" || !currentVersionField.value.includes(requiredVersionField.value);
+  const needInstall = state.needInstall();
   installDriverButton.style.display = needInstall ? "" : "none";
 });
 document.addEventListener("frontend:installdriver", function() {
@@ -45,7 +50,7 @@ document.addEventListener("frontend:installdriverdone", function() {
 
 const closeWindowButton = document.getElementById("closeWindowButton");
 document.addEventListener("frontend:render", function() {
-  const needInstall = currentVersionField.value == "" || !currentVersionField.value.includes(requiredVersionField.value);
+  const needInstall = state.needInstall();
   closeWindowButton.style.display = needInstall ? "none" : "";
 });
 document.addEventListener("frontend:installdriverdone", function() {
@@ -85,4 +90,4 @@ document.addEventListener("frontend:installdriver", async function() {
   }
 });
 
-initialize();
+state.init();
