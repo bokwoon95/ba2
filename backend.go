@@ -1,8 +1,14 @@
 package main
 
 import (
+	"changeme/stacktrace"
 	"fmt"
 	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strconv"
 	"sync"
 
 	"github.com/playwright-community/playwright-go"
@@ -19,8 +25,10 @@ type Backend struct {
 	Playwright                *playwright.Playwright
 	PlaywrightDriver          *playwright.PlaywrightDriver
 	PlaywrightDriverDirectory string
+	ChromeProfileDirectory    string
 	Windows                   map[string]*application.WebviewWindow
 	WindowsMutex              sync.RWMutex
+	Browser                   playwright.Browser
 }
 
 type UpdateEvent struct {
@@ -124,6 +132,46 @@ func (backend *Backend) FocusWindow(name string) error {
 		return fmt.Errorf("no such window: %s", name)
 	}
 	window.Focus()
+	return nil
+}
+
+func (app *Backend) OpenBrowser() error {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		return stacktrace.New(err)
+	}
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("pwsh.exe", "-command", fmt.Sprintf(`Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList --remote-debugging-port=9222, --user-data-dir=%s, https://www.google.com`, strconv.Quote(filepath.Join(userHomeDir, "BrowserAutomateChromeProfile"))))
+	case "darwin":
+		cmd = exec.Command("open", "-a", "Google Chrome", "--remote-debugging-port=9222", "https://www.google.com")
+	default:
+		return stacktrace.New(fmt.Errorf("unsupported OS: %s", runtime.GOOS))
+	}
+	fmt.Printf("running %s\n", cmd.String())
+	err = cmd.Run()
+	if err != nil {
+		return stacktrace.New(err)
+	}
+	return nil
+}
+
+func (app *Backend) ConnectBrowser() error {
+	var err error
+	if app.Playwright == nil {
+		app.Playwright, err = playwright.Run()
+		if err != nil {
+			return stacktrace.New(err)
+		}
+	}
+	if app.Browser != nil {
+		_ = app.Browser.Close()
+	}
+	app.Browser, err = app.Playwright.Chromium.ConnectOverCDP("http://localhost:9222")
+	if err != nil {
+		return stacktrace.New(err)
+	}
 	return nil
 }
 

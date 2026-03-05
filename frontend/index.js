@@ -38,9 +38,21 @@ import "basecoat-css/all";
       Backend.FocusWindow("main");
     }
   }
-  // How to check if we are connected to a browser? Is the browser already
-  // open? Can we preemptively connect to it? If not, how to tell the user to
-  // connect to it?
+  try {
+    await Backend.ConnectBrowser();
+  } catch (e) {
+    if (e.toString().indexOf("ECONNREFUSED") >= 0) {
+      await Backend.OpenBrowser();
+      await Backend.ConnectBrowser();
+    } else {
+      console.error(e);
+      // Backend.Dialog(new MessageDialogOptions({
+      //   Title: "Error",
+      //   Message: e,
+      // }));
+      return;
+    }
+  }
   console.log(await Backend.Hello());
 })();
 

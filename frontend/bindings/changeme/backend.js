@@ -19,6 +19,13 @@ export function CloseWindow(name) {
 }
 
 /**
+ * @returns {$CancellablePromise<void>}
+ */
+export function ConnectBrowser() {
+    return $Call.ByID(3984011762);
+}
+
+/**
  * @param {$models.WebviewWindowOptions} options
  * @returns {$CancellablePromise<void>}
  */
@@ -56,6 +63,13 @@ export function FocusWindow(name) {
  */
 export function Hello() {
     return $Call.ByID(1531277936);
+}
+
+/**
+ * @returns {$CancellablePromise<void>}
+ */
+export function OpenBrowser() {
+    return $Call.ByID(502492056);
 }
 
 /**

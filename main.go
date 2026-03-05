@@ -1,10 +1,12 @@
 package main
 
 import (
+	"changeme/stacktrace"
 	"context"
 	"embed"
 	_ "embed"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -19,24 +21,33 @@ import (
 var assets embed.FS
 
 func main() {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
+	var playwrightDriver *playwright.PlaywrightDriver
 	var playwrightDriverDirectory string
-	if s := os.Getenv("PLAYWRIGHT_DRIVER_PATH"); s != "" {
-		playwrightDriverDirectory = s
-	} else {
-		playwrightDriverDirectory = filepath.Join(userHomeDir, "browserautomate", "playwrightdriver")
-	}
-	playwrightDriver, err := playwright.NewDriver(&playwright.RunOptions{
-		DriverDirectory:     playwrightDriverDirectory,
-		SkipInstallBrowsers: true,
-		Verbose:             true,
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
+	startupErr := func() error {
+		userHomeDir, err := os.UserHomeDir()
+		if err != nil {
+			return stacktrace.New(err)
+		}
+		if s := os.Getenv("PLAYWRIGHT_DRIVER_PATH"); s != "" {
+			playwrightDriverDirectory = s
+		} else {
+			playwrightDriverDirectory = filepath.Join(userHomeDir, "browserautomate", "playwrightdriver")
+		}
+		err = os.MkdirAll(playwrightDriverDirectory, 0755)
+		if err != nil {
+			return stacktrace.New(err)
+		}
+		playwrightDriver, err = playwright.NewDriver(&playwright.RunOptions{
+			DriverDirectory:     playwrightDriverDirectory,
+			SkipInstallBrowsers: true,
+			Verbose:             true,
+		})
+		if err != nil {
+			return stacktrace.New(err)
+		}
+		return stacktrace.New(fmt.Errorf("whee"))
+	}()
+	fmt.Println(startupErr)
 	app := application.New(application.Options{
 		Name:        "ba2",
 		Description: "A demo of using raw HTML & CSS",
@@ -53,12 +64,12 @@ func main() {
 		PlaywrightDriverDirectory: playwrightDriverDirectory,
 		Windows:                   make(map[string]*application.WebviewWindow),
 	}
-	go func() {
-		http.ListenAndServe("localhost:9246", backend)
-	}()
 	app.RegisterService(application.NewServiceWithOptions(backend, application.ServiceOptions{
 		Route: "/backend",
 	}))
+	go func() {
+		http.ListenAndServe("localhost:9246", backend)
+	}()
 	window := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title: "Browser Automate",
 		Mac: application.MacWindow{
@@ -79,8 +90,14 @@ func main() {
 			time.Sleep(time.Second)
 		}
 	}()
-	err = app.Run()
+	err := app.Run()
 	if err != nil && !errors.Is(err, context.Canceled) {
 		log.Fatal(err)
+	}
+	if startupErr != nil {
+		dialog := app.Dialog.Error()
+		dialog.SetTitle("Error")
+		dialog.SetMessage(startupErr.Error())
+		dialog.Show()
 	}
 }
