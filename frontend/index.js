@@ -16,8 +16,7 @@ import "basecoat-css/all";
     }));
   } else {
     const driverData = await response.json();
-    console.log(driverData);
-    if (!driverData.currentVersion.includes(driverData.requiredVersion) || true) {
+    if (!driverData.currentVersion.includes(driverData.requiredVersion)) {
       const params = new URLSearchParams();
       params.append("currentVersion", driverData.currentVersion);
       params.append("requiredVersion", driverData.requiredVersion);
@@ -25,7 +24,6 @@ import "basecoat-css/all";
         Name: "installdriver",
         URL: `/installdriver.html?${params.toString()}`,
       }));
-      console.log("installdriver spawned");
       Backend.EnableWindow("main", false);
       await new Promise(function(resolve) {
         const unregister = Events.On("backend:windowclosed", function(event) {
@@ -36,7 +34,6 @@ import "basecoat-css/all";
           resolve();
         });
       });
-      console.log("installdriver closed");
       Backend.EnableWindow("main", true);
       Backend.FocusWindow("main");
     }
