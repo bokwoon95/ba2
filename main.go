@@ -45,7 +45,7 @@ func main() {
 		if err != nil {
 			return stacktrace.New(err)
 		}
-		return stacktrace.New(fmt.Errorf("whee"))
+		return nil
 	}()
 	fmt.Println(startupErr)
 	app := application.New(application.Options{
