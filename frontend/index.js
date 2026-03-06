@@ -39,6 +39,7 @@ import "basecoat-css/all";
     }
   }
   try {
+    // await Backend.ConnectBrowser();
     await Backend.ConnectBrowser();
   } catch (e) {
     if (e.toString().indexOf("ECONNREFUSED") >= 0) {
@@ -46,10 +47,10 @@ import "basecoat-css/all";
       await Backend.ConnectBrowser();
     } else {
       console.error(e);
-      // Backend.Dialog(new MessageDialogOptions({
-      //   Title: "Error",
-      //   Message: e,
-      // }));
+      Backend.Dialog(new MessageDialogOptions({
+        Title: "Error",
+        Message: e,
+      }));
       return;
     }
   }

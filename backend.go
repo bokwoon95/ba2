@@ -135,7 +135,7 @@ func (backend *Backend) FocusWindow(name string) error {
 	return nil
 }
 
-func (app *Backend) OpenBrowser() error {
+func (backend *Backend) OpenBrowser() error {
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		return stacktrace.New(err)
@@ -157,18 +157,18 @@ func (app *Backend) OpenBrowser() error {
 	return nil
 }
 
-func (app *Backend) ConnectBrowser() error {
+func (backend *Backend) ConnectBrowser() error {
 	var err error
-	if app.Playwright == nil {
-		app.Playwright, err = playwright.Run()
+	if backend.Playwright == nil {
+		backend.Playwright, err = playwright.Run(backend.PlaywrightRunOptions)
 		if err != nil {
 			return stacktrace.New(err)
 		}
 	}
-	if app.Browser != nil {
-		_ = app.Browser.Close()
+	if backend.Browser != nil {
+		_ = backend.Browser.Close()
 	}
-	app.Browser, err = app.Playwright.Chromium.ConnectOverCDP("http://localhost:9222")
+	backend.Browser, err = backend.Playwright.Chromium.ConnectOverCDP("http://localhost:9222")
 	if err != nil {
 		return stacktrace.New(err)
 	}
