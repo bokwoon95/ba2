@@ -2,6 +2,8 @@ package main
 
 import (
 	"changeme/stacktrace"
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,7 +11,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/playwright-community/playwright-go"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -26,9 +31,11 @@ type Backend struct {
 	PlaywrightDriver       *playwright.PlaywrightDriver
 	PlaywrightRunOptions   *playwright.RunOptions
 	ChromeProfileDirectory string
-	Windows                map[string]*application.WebviewWindow
-	WindowsMutex           sync.RWMutex
 	Browser                playwright.Browser
+	Sequence               atomic.Int64
+	Mutex                  sync.Mutex
+	Windows                map[string]*application.WebviewWindow
+	Pages                  map[int64]playwright.Page
 }
 
 type UpdateEvent struct {
@@ -60,48 +67,55 @@ func (backend *Backend) Dialog(options MessageDialogOptions) {
 
 func (backend *Backend) CreateWindow(options WebviewWindowOptions) error {
 	name := options.Name
-	backend.WindowsMutex.Lock()
-	defer backend.WindowsMutex.Unlock()
+	backend.Mutex.Lock()
 	window, ok := backend.Windows[name]
+	backend.Mutex.Unlock()
 	if !ok {
 		window = backend.App.Window.NewWithOptions(application.WebviewWindowOptions{
 			Name:  options.Name,
 			Title: options.Title,
 			URL:   options.URL,
 		})
+		backend.Mutex.Lock()
 		backend.Windows[name] = window
+		backend.Mutex.Unlock()
 	} else {
 		window.SetTitle(options.Title)
 		window.SetURL(options.URL)
 		window.Show()
 	}
 	window.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
-		backend.WindowsMutex.Lock()
-		defer backend.WindowsMutex.Unlock()
+		backend.Mutex.Lock()
+		defer backend.Mutex.Unlock()
 		backend.App.Event.EmitEvent(&application.CustomEvent{
 			Name:   "WindowClosed",
 			Sender: name,
 		})
+		backend.Mutex.Lock()
 		delete(backend.Windows, name)
+		backend.Mutex.Unlock()
 	})
 	return nil
 }
 
 func (backend *Backend) CloseWindow(name string) error {
-	backend.WindowsMutex.Lock()
-	defer backend.WindowsMutex.Unlock()
+	backend.Mutex.Lock()
 	window, ok := backend.Windows[name]
+	backend.Mutex.Unlock()
 	if !ok {
 		return fmt.Errorf("no such window: %s", name)
 	}
 	window.Close()
+	backend.Mutex.Lock()
+	delete(backend.Windows, name)
+	backend.Mutex.Unlock()
 	return nil
 }
 
 func (backend *Backend) EnableWindow(name string, enabled bool) error {
-	backend.WindowsMutex.Lock()
-	defer backend.WindowsMutex.Unlock()
+	backend.Mutex.Lock()
 	window, ok := backend.Windows[name]
+	backend.Mutex.Unlock()
 	if !ok {
 		return fmt.Errorf("no such window: %s", name)
 	}
@@ -110,9 +124,9 @@ func (backend *Backend) EnableWindow(name string, enabled bool) error {
 }
 
 func (backend *Backend) ShowWindow(name string, show bool) error {
-	backend.WindowsMutex.Lock()
-	defer backend.WindowsMutex.Unlock()
+	backend.Mutex.Lock()
 	window, ok := backend.Windows[name]
+	backend.Mutex.Unlock()
 	if !ok {
 		return fmt.Errorf("no such window: %s", name)
 	}
@@ -125,9 +139,9 @@ func (backend *Backend) ShowWindow(name string, show bool) error {
 }
 
 func (backend *Backend) FocusWindow(name string) error {
-	backend.WindowsMutex.Lock()
-	defer backend.WindowsMutex.Unlock()
+	backend.Mutex.Lock()
 	window, ok := backend.Windows[name]
+	backend.Mutex.Unlock()
 	if !ok {
 		return fmt.Errorf("no such window: %s", name)
 	}
@@ -135,43 +149,103 @@ func (backend *Backend) FocusWindow(name string) error {
 	return nil
 }
 
-func (backend *Backend) OpenBrowser() error {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		return stacktrace.New(err)
-	}
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("pwsh.exe", "-command", fmt.Sprintf(`Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList --remote-debugging-port=9222, --user-data-dir=%s, https://www.google.com`, strconv.Quote(filepath.Join(userHomeDir, "BrowserAutomateChromeProfile"))))
-	case "darwin":
-		cmd = exec.Command("open", "-a", "Google Chrome", "--remote-debugging-port=9222", "https://www.google.com")
-	default:
-		return stacktrace.New(fmt.Errorf("unsupported OS: %s", runtime.GOOS))
-	}
-	fmt.Printf("running %s\n", cmd.String())
-	err = cmd.Run()
-	if err != nil {
-		return stacktrace.New(err)
-	}
-	return nil
-}
-
-func (backend *Backend) ConnectBrowser() error {
-	var err error
+func (backend *Backend) StartPlaywright() error {
 	if backend.Playwright == nil {
+		var err error
 		backend.Playwright, err = playwright.Run(backend.PlaywrightRunOptions)
 		if err != nil {
 			return stacktrace.New(err)
 		}
 	}
-	if backend.Browser != nil {
-		_ = backend.Browser.Close()
+	return nil
+}
+
+func (backend *Backend) OpenBrowser() error {
+	if backend.Browser == nil || !backend.Browser.IsConnected() {
+		var err error
+		backend.Browser, err = backend.Playwright.Chromium.ConnectOverCDP("http://localhost:9222")
+		if err != nil {
+			var playwrightErr *playwright.Error
+			if !errors.As(err, &playwrightErr) || !strings.Contains(playwrightErr.Message, "ECONNREFUSED") {
+				return stacktrace.New(err)
+			}
+			userHomeDir, err := os.UserHomeDir()
+			if err != nil {
+				return stacktrace.New(err)
+			}
+			var cmd *exec.Cmd
+			switch runtime.GOOS {
+			case "windows":
+				cmd = exec.Command("pwsh.exe", "-command", fmt.Sprintf(`Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList --remote-debugging-port=9222, --user-data-dir=%s, https://www.google.com`, strconv.Quote(filepath.Join(userHomeDir, "BrowserAutomateChromeProfile"))))
+			case "darwin":
+				cmd = exec.Command("open", "-a", "Google Chrome", "--remote-debugging-port=9222", "https://www.google.com")
+			default:
+				return stacktrace.New(fmt.Errorf("unsupported OS: %s", runtime.GOOS))
+			}
+			fmt.Printf("running %s\n", cmd.String())
+			err = cmd.Run()
+			if err != nil {
+				return stacktrace.New(err)
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			waitForCDP(ctx, "http://127.0.0.1:9222")
+			backend.Browser, err = backend.Playwright.Chromium.ConnectOverCDP("http://127.0.0.1:9222")
+			if err != nil {
+				return stacktrace.New(err)
+			}
+		}
 	}
-	backend.Browser, err = backend.Playwright.Chromium.ConnectOverCDP("http://localhost:9222")
-	if err != nil {
-		return stacktrace.New(err)
+	browserContexts := backend.Browser.Contexts()
+	if len(browserContexts) == 0 {
+		_, err := backend.Browser.NewContext()
+		if err != nil {
+			return stacktrace.New(err)
+		}
 	}
+	return nil
+}
+
+func waitForCDP(ctx context.Context, endpoint string) error {
+	client := &http.Client{Timeout: 500 * time.Millisecond}
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+	url := endpoint + "/json/version"
+	for {
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		resp, err := client.Do(req)
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				return nil
+			}
+		}
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("cdp not ready: %w", ctx.Err())
+		case <-ticker.C:
+		}
+	}
+}
+
+func (backend *Backend) Close() error {
+	backend.Browser.Close()
+	backend.Mutex.Lock()
+	seen := make(map[playwright.BrowserContext]struct{})
+	for _, page := range backend.Pages {
+		browserContext := page.Context()
+		if _, ok := seen[browserContext]; ok {
+			continue
+		}
+		seen[browserContext] = struct{}{}
+		browserContext.Close()
+	}
+	clear(backend.Pages)
+	for _, window := range backend.Windows {
+		window.Close()
+	}
+	clear(backend.Windows)
+	backend.Mutex.Unlock()
 	return nil
 }
 

@@ -5,6 +5,12 @@ GET /backend/driver {"currentVersion":"","requiredVersion":""}
 POST /backend/driver/install <streams download progress>
 POST /backend/driver/install
 
+- Browser.Contexts() to get browser contexts
+- BrowserContext.Pages() to get pages
+- BrowserContext.OnPage() to detect when a new page is created.
+- Page.OnClose() to detect when a page is closed.
+- We cannot detect when new BrowserContexts are created or when they are closed, so we will only base off the initial list of BrowserContexts.
+
 init flow
 GET /backend/driver
 if driver not installed, open new window to /installdriver.html and ask the user to click "Install driver" which calls /backend/installdriver

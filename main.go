@@ -64,6 +64,7 @@ func main() {
 		PlaywrightRunOptions: playwrightRunOptions,
 		Windows:              make(map[string]*application.WebviewWindow),
 	}
+	defer backend.Close()
 	app.RegisterService(application.NewServiceWithOptions(backend, application.ServiceOptions{
 		Route: "/backend",
 	}))
@@ -80,9 +81,9 @@ func main() {
 		BackgroundColour: application.NewRGB(27, 38, 54),
 		URL:              "/index.html?foo=bar&foo=baz",
 	})
-	backend.WindowsMutex.Lock()
+	backend.Mutex.Lock()
 	backend.Windows["main"] = window
-	backend.WindowsMutex.Unlock()
+	backend.Mutex.Unlock()
 	go func() {
 		for {
 			now := time.Now().Format(time.RFC1123)

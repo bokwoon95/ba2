@@ -11,18 +11,18 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as $models from "./models.js";
 
 /**
+ * @returns {$CancellablePromise<void>}
+ */
+export function Close() {
+    return $Call.ByID(1627081596);
+}
+
+/**
  * @param {string} name
  * @returns {$CancellablePromise<void>}
  */
 export function CloseWindow(name) {
     return $Call.ByID(2212387040, name);
-}
-
-/**
- * @returns {$CancellablePromise<void>}
- */
-export function ConnectBrowser() {
-    return $Call.ByID(3984011762);
 }
 
 /**
@@ -79,4 +79,11 @@ export function OpenBrowser() {
  */
 export function ShowWindow(name, show) {
     return $Call.ByID(392917569, name, show);
+}
+
+/**
+ * @returns {$CancellablePromise<void>}
+ */
+export function StartPlaywright() {
+    return $Call.ByID(1677311519);
 }

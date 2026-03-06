@@ -9,52 +9,45 @@ import "basecoat-css/basecoat";
 import "basecoat-css/all";
 
 (async function init() {
-  let response = await fetch("/backend/driver/");
-  if (!response.ok) {
-    Backend.Dialog(new MessageDialogOptions({
-      Message: `fetching driver details: ${response.statusText}`,
-    }));
-  } else {
-    const driverData = await response.json();
-    if (!driverData.currentVersion.includes(driverData.requiredVersion)) {
-      const params = new URLSearchParams();
-      params.append("currentVersion", driverData.currentVersion);
-      params.append("requiredVersion", driverData.requiredVersion);
-      await Backend.CreateWindow(new WebviewWindowOptions({
-        Name: "installdriver",
-        URL: `/installdriver.html?${params.toString()}`,
-      }));
-      Backend.EnableWindow("main", false);
-      await new Promise(function(resolve) {
-        const unregister = Events.On("WindowClosed", function(event) {
-          if (event.sender != "installdriver") {
-            return;
-          }
-          unregister();
-          resolve();
-        });
-      });
-      Backend.EnableWindow("main", true);
-      Backend.FocusWindow("main");
-    }
-  }
   try {
-    // await Backend.ConnectBrowser();
-    await Backend.ConnectBrowser();
-  } catch (e) {
-    if (e.toString().indexOf("ECONNREFUSED") >= 0) {
-      await Backend.OpenBrowser();
-      await Backend.ConnectBrowser();
-    } else {
-      console.error(e);
+    let response = await fetch("/backend/driver/");
+    if (!response.ok) {
       Backend.Dialog(new MessageDialogOptions({
-        Title: "Error",
-        Message: e,
+        Message: `fetching driver details: ${response.statusText}`,
       }));
-      return;
+    } else {
+      const driverData = await response.json();
+      if (!driverData.currentVersion.includes(driverData.requiredVersion)) {
+        const params = new URLSearchParams();
+        params.append("currentVersion", driverData.currentVersion);
+        params.append("requiredVersion", driverData.requiredVersion);
+        await Backend.CreateWindow(new WebviewWindowOptions({
+          Name: "installdriver",
+          URL: `/installdriver.html?${params.toString()}`,
+        }));
+        Backend.EnableWindow("main", false);
+        await new Promise(function(resolve) {
+          const unregister = Events.On("WindowClosed", function(event) {
+            if (event.sender != "installdriver") {
+              return;
+            }
+            unregister();
+            resolve();
+          });
+        });
+        Backend.EnableWindow("main", true);
+        Backend.FocusWindow("main");
+      }
     }
+    await Backend.StartPlaywright();
+    await Backend.OpenBrowser();
+    console.log(await Backend.Hello());
+  } catch (e) {
+    Backend.Dialog(new MessageDialogOptions({
+      Title: "Error",
+      Message: e,
+    }));
   }
-  console.log(await Backend.Hello());
 })();
 
 document.addEventListener("Connect", function() {
