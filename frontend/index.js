@@ -73,7 +73,7 @@ document.addEventListener("backend:installdriver", async function() {
   }
   textarea.addEventListener("scroll", updateStickToBottom);
   textarea.value = "";
-  const unregister = Events.On("backend:update", function(event) {
+  const unregister = Events.On("update_event", function(event) {
     const updateEvent = new UpdateEvent(event.data);
     if (updateEvent.eventID != eventID) {
       return;

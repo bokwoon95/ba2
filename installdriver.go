@@ -40,7 +40,7 @@ func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, category+": "+message)
 		responseController.Flush()
 		backend.App.Event.EmitEvent(&application.CustomEvent{
-			Name: "backend:update",
+			Name: "update_event",
 			Data: UpdateEvent{
 				EventID:  eventID,
 				Category: category,

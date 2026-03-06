@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	application.RegisterEvent[UpdateEvent]("backend:update")
+	application.RegisterEvent[UpdateEvent]("update_event")
 }
 
 type Backend struct {
