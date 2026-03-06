@@ -6,7 +6,6 @@ import (
 	"embed"
 	_ "embed"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -22,32 +21,33 @@ var assets embed.FS
 
 func main() {
 	var playwrightDriver *playwright.PlaywrightDriver
-	var playwrightDriverDirectory string
+	var playwrightRunOptions *playwright.RunOptions
 	startupErr := func() error {
 		userHomeDir, err := os.UserHomeDir()
 		if err != nil {
 			return stacktrace.New(err)
 		}
+		var driverDirectory string
 		if s := os.Getenv("PLAYWRIGHT_DRIVER_PATH"); s != "" {
-			playwrightDriverDirectory = s
+			driverDirectory = s
 		} else {
-			playwrightDriverDirectory = filepath.Join(userHomeDir, "browserautomate", "playwrightdriver")
+			driverDirectory = filepath.Join(userHomeDir, "browserautomate", "playwrightdriver")
 		}
-		err = os.MkdirAll(playwrightDriverDirectory, 0755)
+		err = os.MkdirAll(driverDirectory, 0755)
 		if err != nil {
 			return stacktrace.New(err)
 		}
-		playwrightDriver, err = playwright.NewDriver(&playwright.RunOptions{
-			DriverDirectory:     playwrightDriverDirectory,
+		playwrightRunOptions = &playwright.RunOptions{
+			DriverDirectory:     driverDirectory,
 			SkipInstallBrowsers: true,
 			Verbose:             true,
-		})
+		}
+		playwrightDriver, err = playwright.NewDriver(playwrightRunOptions)
 		if err != nil {
 			return stacktrace.New(err)
 		}
 		return nil
 	}()
-	fmt.Println(startupErr)
 	app := application.New(application.Options{
 		Name:        "ba2",
 		Description: "A demo of using raw HTML & CSS",
@@ -59,10 +59,10 @@ func main() {
 		},
 	})
 	backend := &Backend{
-		App:                       app,
-		PlaywrightDriver:          playwrightDriver,
-		PlaywrightDriverDirectory: playwrightDriverDirectory,
-		Windows:                   make(map[string]*application.WebviewWindow),
+		App:                  app,
+		PlaywrightDriver:     playwrightDriver,
+		PlaywrightRunOptions: playwrightRunOptions,
+		Windows:              make(map[string]*application.WebviewWindow),
 	}
 	app.RegisterService(application.NewServiceWithOptions(backend, application.ServiceOptions{
 		Route: "/backend",

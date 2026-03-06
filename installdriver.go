@@ -65,13 +65,13 @@ func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
 			platform = "linux"
 		}
 	}
-	err := os.MkdirAll(backend.PlaywrightDriverDirectory, 0755)
+	err := os.MkdirAll(backend.PlaywrightRunOptions.DriverDirectory, 0755)
 	if err != nil {
-		writeResponse(w, "error", fmt.Sprintf("creating directory %s: %v", backend.PlaywrightDriverDirectory, err))
+		writeResponse(w, "error", fmt.Sprintf("creating directory %s: %v", backend.PlaywrightRunOptions.DriverDirectory, err))
 		return
 	}
 	baseName := fmt.Sprintf("playwright-%s-%s.zip", backend.PlaywrightDriver.Version, platform)
-	filePath := filepath.Join(backend.PlaywrightDriverDirectory, baseName)
+	filePath := filepath.Join(backend.PlaywrightRunOptions.DriverDirectory, baseName)
 	fileInfo, err := os.Stat(filePath)
 	needDownloadFile := false
 	if err != nil {
@@ -181,7 +181,7 @@ func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, zipFile := range zipReader.File {
 		writeResponse(w, "unzipping", fmt.Sprintf("%d %s", zipFile.UncompressedSize64, zipFile.Name))
-		destFilePath := filepath.Join(backend.PlaywrightDriverDirectory, zipFile.Name)
+		destFilePath := filepath.Join(backend.PlaywrightRunOptions.DriverDirectory, zipFile.Name)
 		if zipFile.FileInfo().IsDir() {
 			err := os.MkdirAll(destFilePath, 0755)
 			if err != nil {

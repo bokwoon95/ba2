@@ -38,7 +38,7 @@ func (backend *Backend) driver(w http.ResponseWriter, r *http.Request) {
 	}
 	var response Response
 	response.RequiredVersion = backend.PlaywrightDriver.Version
-	fileInfo, err := os.Stat(filepath.Join(backend.PlaywrightDriverDirectory, "package", "cli.js"))
+	fileInfo, err := os.Stat(filepath.Join(backend.PlaywrightRunOptions.DriverDirectory, "package", "cli.js"))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			response.Error = "ErrNotExist"

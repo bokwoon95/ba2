@@ -21,14 +21,14 @@ func init() {
 }
 
 type Backend struct {
-	App                       *application.App
-	Playwright                *playwright.Playwright
-	PlaywrightDriver          *playwright.PlaywrightDriver
-	PlaywrightDriverDirectory string
-	ChromeProfileDirectory    string
-	Windows                   map[string]*application.WebviewWindow
-	WindowsMutex              sync.RWMutex
-	Browser                   playwright.Browser
+	App                    *application.App
+	Playwright             *playwright.Playwright
+	PlaywrightDriver       *playwright.PlaywrightDriver
+	PlaywrightRunOptions   *playwright.RunOptions
+	ChromeProfileDirectory string
+	Windows                map[string]*application.WebviewWindow
+	WindowsMutex           sync.RWMutex
+	Browser                playwright.Browser
 }
 
 type UpdateEvent struct {
