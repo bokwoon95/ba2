@@ -79,7 +79,7 @@ func (backend *Backend) CreateWindow(options WebviewWindowOptions) error {
 		backend.WindowsMutex.Lock()
 		defer backend.WindowsMutex.Unlock()
 		backend.App.Event.EmitEvent(&application.CustomEvent{
-			Name:   "backend:windowclosed",
+			Name:   "windowclosed_event",
 			Sender: name,
 		})
 		delete(backend.Windows, name)

@@ -26,7 +26,7 @@ import "basecoat-css/all";
       }));
       Backend.EnableWindow("main", false);
       await new Promise(function(resolve) {
-        const unregister = Events.On("backend:windowclosed", function(event) {
+        const unregister = Events.On("windowclosed_event", function(event) {
           if (event.sender != "installdriver") {
             return;
           }
@@ -56,7 +56,7 @@ import "basecoat-css/all";
   console.log(await Backend.Hello());
 })();
 
-document.addEventListener("backend:connect", function() {
+document.addEventListener("connect_event", function() {
   Backend.Dialog(new MessageDialogOptions({
     Title: "Info",
     Message: "Hi there",
@@ -64,7 +64,7 @@ document.addEventListener("backend:connect", function() {
 });
 
 const textarea = document.getElementById("textarea");
-document.addEventListener("backend:installdriver", async function() {
+document.addEventListener("installdriver_event", async function() {
   const eventID = Math.random().toString(36).substring(2);
   const promise = fetch(`/backend/installdriver/?eventID=${eventID}`, { method: "POST" });
   let stickToBottom = true;
