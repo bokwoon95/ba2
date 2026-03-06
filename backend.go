@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	application.RegisterEvent[UpdateEvent]("update_event")
+	application.RegisterEvent[UpdateEvent]("UpdateEvent")
 }
 
 type Backend struct {
@@ -79,7 +79,7 @@ func (backend *Backend) CreateWindow(options WebviewWindowOptions) error {
 		backend.WindowsMutex.Lock()
 		defer backend.WindowsMutex.Unlock()
 		backend.App.Event.EmitEvent(&application.CustomEvent{
-			Name:   "windowclosed_event",
+			Name:   "WindowClosed",
 			Sender: name,
 		})
 		delete(backend.Windows, name)

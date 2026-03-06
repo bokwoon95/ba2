@@ -12,7 +12,7 @@ import * as main$0 from "../../../../../changeme/models.js";
 
 function configure() {
     Object.freeze(Object.assign($Create.Events, {
-        "update_event": $$createType0,
+        "UpdateEvent": $$createType0,
     }));
 }
 

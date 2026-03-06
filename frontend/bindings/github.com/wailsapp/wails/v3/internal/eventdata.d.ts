@@ -12,7 +12,7 @@ import type * as main$0 from "../../../../../changeme/models.js";
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
-            "update_event": main$0.UpdateEvent;
+            "UpdateEvent": main$0.UpdateEvent;
         }
     }
 }
