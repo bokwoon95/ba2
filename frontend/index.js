@@ -57,6 +57,16 @@ document.addEventListener("Connect", function() {
   }));
 });
 
+const statusBar = document.getElementById("statusBar");
+statusBar.state = {
+};
+Events.On("UpdateEvent", function(event) {
+  const updateEvent = new UpdateEvent(event.data);
+  if (updateEvent.eventID != "statusBar") {
+    return;
+  }
+});
+
 const textarea = document.getElementById("textarea");
 document.addEventListener("InstallDriver", async function() {
   const eventID = Math.random().toString(36).substring(2);
