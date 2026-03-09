@@ -10,6 +10,55 @@ import { Create as $Create } from "@wailsio/runtime";
 // @ts-ignore: Unused imports
 import * as application$0 from "../github.com/wailsapp/wails/v3/pkg/application/models.js";
 
+export class InstallDriverEvent {
+    /**
+     * Creates a new InstallDriverEvent instance.
+     * @param {Partial<InstallDriverEvent>} [$$source = {}] - The source object to create the InstallDriverEvent.
+     */
+    constructor($$source = {}) {
+        if (!("eventID" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["eventID"] = "";
+        }
+        if (!("category" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["category"] = "";
+        }
+        if (!("message" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["message"] = "";
+        }
+        if (!("timestamp" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["timestamp"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new InstallDriverEvent instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {InstallDriverEvent}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new InstallDriverEvent(/** @type {Partial<InstallDriverEvent>} */($$parsedSource));
+    }
+}
+
 export class MessageDialogOptions {
     /**
      * Creates a new MessageDialogOptions instance.
@@ -53,10 +102,10 @@ export class MessageDialogOptions {
     }
 }
 
-export class UpdateEvent {
+export class StatusBarEvent {
     /**
-     * Creates a new UpdateEvent instance.
-     * @param {Partial<UpdateEvent>} [$$source = {}] - The source object to create the UpdateEvent.
+     * Creates a new StatusBarEvent instance.
+     * @param {Partial<StatusBarEvent>} [$$source = {}] - The source object to create the StatusBarEvent.
      */
     constructor($$source = {}) {
         if (!("eventID" in $$source)) {
@@ -80,18 +129,25 @@ export class UpdateEvent {
              */
             this["message"] = "";
         }
+        if (!("timestamp" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["timestamp"] = 0;
+        }
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new UpdateEvent instance from a string or object.
+     * Creates a new StatusBarEvent instance from a string or object.
      * @param {any} [$$source = {}]
-     * @returns {UpdateEvent}
+     * @returns {StatusBarEvent}
      */
     static createFrom($$source = {}) {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new UpdateEvent(/** @type {Partial<UpdateEvent>} */($$parsedSource));
+        return new StatusBarEvent(/** @type {Partial<StatusBarEvent>} */($$parsedSource));
     }
 }
 

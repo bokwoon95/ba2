@@ -16,6 +16,17 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
+func init() {
+	application.RegisterEvent[InstallDriverEvent]("InstallDriverEvent")
+}
+
+type InstallDriverEvent struct {
+	EventID   string `json:"eventID"`
+	Category  string `json:"category"`
+	Message   string `json:"message"`
+	Timestamp int64  `json:"timestamp"`
+}
+
 // playwrightCDNMirrors is copied from playwright-go.
 var playwrightCDNMirrors = []string{
 	"https://playwright.azureedge.net",
@@ -29,10 +40,10 @@ func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	eventID := r.Form.Get("eventID")
-	if eventID == "" {
+	windowName := r.Form.Get("windowName")
+	if windowName == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, "MissingEventID")
+		fmt.Fprintln(w, "MissingWindowName")
 		return
 	}
 	responseController := http.NewResponseController(w)
@@ -40,11 +51,12 @@ func (backend *Backend) installdriver(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, category+": "+message)
 		responseController.Flush()
 		backend.App.Event.EmitEvent(&application.CustomEvent{
-			Name: "UpdateEvent",
-			Data: UpdateEvent{
-				EventID:  eventID,
-				Category: category,
-				Message:  message,
+			Sender: windowName,
+			Name:   "InstallDriverEvent",
+			Data: InstallDriverEvent{
+				Category:  category,
+				Message:   message,
+				Timestamp: time.Now().Unix(),
 			},
 		})
 	}

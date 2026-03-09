@@ -6,17 +6,19 @@
 <script type="module" src="/base.js"></script>
 <script type="module" src="/index.js"></script>
 <title>Wails App</title>
-<body class="p-3 h-full">
-  <div class="flex gap-2">
-    <button id="connectButton" class="btn" data-click-event="Connect">connect</button>
-    <select class="select">
-      <option disabled selected>--- select tab ---</option>
-    </select>
-    <button class="btn" data-click-event="InstallDriver">focus</button>
+<body class="h-full">
+  <div class="p-3">
+    <div class="flex gap-2">
+      <button id="connectButton" class="btn" data-click-event="Connect">connect</button>
+      <select class="select">
+        <option disabled selected>--- select tab ---</option>
+      </select>
+      <button class="btn" data-click-event="InstallDriver">focus</button>
+    </div>
+    <textarea id="textarea" class="w-full" rows="10" placeholder="Type your message here" style="overflow: auto;"></textarea>
+    <div class="h-12"></div>
   </div>
-  <textarea id="textarea" class="w-full" rows="10" placeholder="Type your message here" style="overflow: auto;"></textarea>
-  <div class="h-12"></div>
-  <div id="statusBar" class="fixed bottom-0 w-full mb-3">
-    <div>loading...</div>
+  <div id="statusBar" class="fixed bottom-0 bg-blue-100 w-full px-3 py-2">
+    loading...
   </div>
 </body>

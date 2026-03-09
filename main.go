@@ -82,7 +82,7 @@ func main() {
 		URL:              "/index.html?foo=bar&foo=baz",
 	})
 	backend.Mutex.Lock()
-	backend.Windows["main"] = window
+	backend.Windows["index"] = window
 	backend.Mutex.Unlock()
 	go func() {
 		for {

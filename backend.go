@@ -22,7 +22,7 @@ import (
 )
 
 func init() {
-	application.RegisterEvent[UpdateEvent]("UpdateEvent")
+	application.RegisterEvent[StatusBarEvent]("StatusBarEvent")
 }
 
 type Backend struct {
@@ -38,10 +38,11 @@ type Backend struct {
 	Pages                  map[int64]playwright.Page
 }
 
-type UpdateEvent struct {
-	EventID  string `json:"eventID"`
-	Category string `json:"category"`
-	Message  string `json:"message"`
+type StatusBarEvent struct {
+	EventID   string `json:"eventID"`
+	Category  string `json:"category"`
+	Message   string `json:"message"`
+	Timestamp int64  `json:"timestamp"`
 }
 
 var _ http.Handler = (*Backend)(nil)

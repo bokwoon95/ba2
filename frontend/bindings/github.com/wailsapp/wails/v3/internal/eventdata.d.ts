@@ -12,7 +12,8 @@ import type * as main$0 from "../../../../../changeme/models.js";
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
-            "UpdateEvent": main$0.UpdateEvent;
+            "InstallDriverEvent": main$0.InstallDriverEvent;
+            "StatusBarEvent": main$0.StatusBarEvent;
         }
     }
 }

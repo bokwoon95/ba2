@@ -1,5 +1,5 @@
 import { Events, Window } from "@wailsio/runtime";
-import { Backend, UpdateEvent } from "./bindings/changeme";
+import { Backend, InstallDriverEvent } from "./bindings/changeme";
 
 const state = {
   currentVersion: "",
@@ -16,6 +16,9 @@ const state = {
 };
 
 const infoMessage = document.getElementById("infoMessage");
+if (!(infoMessage instanceof HTMLElement)) {
+  throw new Error("element not found or invalid");
+}
 document.addEventListener("Render", function() {
   const needInstall = state.needInstall();
   infoMessage.textContent = needInstall ? "Driver is missing or out of date, please install" : "Driver is up to date";
@@ -28,6 +31,9 @@ document.addEventListener("InstallDriverDone", function() {
 });
 
 const installDriverButton = document.getElementById("installDriverButton");
+if (!(installDriverButton instanceof HTMLButtonElement)) {
+  throw new Error("element not found or invalid");
+}
 document.addEventListener("Render", function() {
   const needInstall = state.needInstall();
   installDriverButton.style.display = needInstall ? "" : "none";
@@ -41,6 +47,9 @@ document.addEventListener("InstallDriverDone", function() {
 });
 
 const installDriverButtonSpinner = installDriverButton.querySelector("svg");
+if (!(installDriverButtonSpinner instanceof SVGSVGElement)) {
+  throw new Error("element not found or invalid");
+}
 document.addEventListener("InstallDriver", function() {
   installDriverButtonSpinner.style.display = "";
 });
@@ -49,6 +58,9 @@ document.addEventListener("InstallDriverDone", function() {
 });
 
 const closeWindowButton = document.getElementById("closeWindowButton");
+if (!(closeWindowButton instanceof HTMLButtonElement)) {
+  throw new Error("element not found or invalid");
+}
 document.addEventListener("Render", function() {
   const needInstall = state.needInstall();
   closeWindowButton.style.display = needInstall ? "none" : "";
@@ -62,21 +74,24 @@ document.addEventListener("CloseWindow", async function() {
 });
 
 const textarea = document.getElementById("textarea");
+if (!(textarea instanceof HTMLTextAreaElement)) {
+  throw new Error("element not found or invalid");
+}
 document.addEventListener("InstallDriver", async function() {
-  const eventID = Math.random().toString(36).substring(2);
-  const promise = fetch(`/backend/installdriver/?eventID=${eventID}`, { method: "POST" });
+  const windowName = await Window.Name();
+  const promise = fetch(`/backend/installdriver/?windowName=${windowName}`, { method: "POST" });
   let stickToBottom = true;
-  function updateStickToBottom() {
+  const updateStickToBottom = function() {
     stickToBottom = textarea.scrollHeight - textarea.scrollTop - textarea.clientHeight <= 50 /* px tolerance */;
   }
   textarea.addEventListener("scroll", updateStickToBottom);
   textarea.value = "";
-  const unregister = Events.On("UpdateEvent", function(event) {
-    const updateEvent = new UpdateEvent(event.data);
-    if (updateEvent.eventID != eventID) {
+  const unregister = Events.On("InstallDriverEvent", function(event) {
+    if (event.sender != windowName) {
       return;
     }
-    textarea.value += `${updateEvent.category}: ${updateEvent.message}\n`;
+    const installDriverEvent = new InstallDriverEvent(event.data);
+    textarea.value += `${installDriverEvent.category}: ${installDriverEvent.message}\n`;
     if (stickToBottom) {
       textarea.scrollTop = textarea.scrollHeight;
     }

@@ -8,7 +8,8 @@ export {
 };
 
 export {
+    InstallDriverEvent,
     MessageDialogOptions,
-    UpdateEvent,
+    StatusBarEvent,
     WebviewWindowOptions
 } from "./models.js";
