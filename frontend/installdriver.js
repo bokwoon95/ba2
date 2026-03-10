@@ -70,7 +70,7 @@ document.addEventListener("InstallDriverDone", function() {
 });
 
 document.addEventListener("CloseWindow", async function() {
-  Backend.CloseWindow(await Window.Name());
+  await Backend.CloseWindow(await Window.Name());
 });
 
 const textarea = document.getElementById("textarea");
