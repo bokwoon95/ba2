@@ -15,7 +15,7 @@ async function init() {
         Name: "installdriver",
         URL: `/installdriver.html?${params.toString()}`,
       }));
-      Backend.EnableWindow("main", false);
+      await Backend.EnableWindow("main", false);
       await new Promise(function(resolve) {
         const unregister = Events.On("WindowClosed", function(event) {
           if (event.sender != "installdriver") {
@@ -25,14 +25,14 @@ async function init() {
           resolve(null);
         });
       });
-      Backend.EnableWindow("main", true);
-      Backend.FocusWindow("main");
+      await Backend.EnableWindow("main", true);
+      await Backend.FocusWindow("main");
     }
     await Backend.StartPlaywright();
     await Backend.OpenBrowser();
     console.log(await Backend.Hello());
   } catch (err) {
-    Backend.Dialog(new MessageDialogOptions({
+    await Backend.Dialog(new MessageDialogOptions({
       Title: "Error",
       Message: err instanceof Error ? err.toString() : String(err),
     }));
@@ -93,9 +93,8 @@ document.addEventListener("StatusBarStateUpdated", function() {
   // TODO: consult statusBar state and update textContent accordingly.
 });
 
-
-document.addEventListener("Connect", function() {
-  Backend.Dialog(new MessageDialogOptions({
+document.addEventListener("Connect", async function() {
+  await Backend.Dialog(new MessageDialogOptions({
     Title: "Info",
     Message: "Hi there",
   }));
