@@ -115,13 +115,6 @@ export class StatusBarEvent {
              */
             this["eventID"] = "";
         }
-        if (!("category" in $$source)) {
-            /**
-             * @member
-             * @type {string}
-             */
-            this["category"] = "";
-        }
         if (!("message" in $$source)) {
             /**
              * @member
@@ -135,6 +128,13 @@ export class StatusBarEvent {
              * @type {number}
              */
             this["timestamp"] = 0;
+        }
+        if (!("done" in $$source)) {
+            /**
+             * @member
+             * @type {boolean}
+             */
+            this["done"] = false;
         }
 
         Object.assign(this, $$source);

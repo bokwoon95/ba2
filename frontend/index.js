@@ -39,46 +39,60 @@ async function init() {
   }
 }
 
-const statusBarElement = document.getElementById("statusBar");
-if (!(statusBarElement instanceof HTMLElement)) {
+const statusBar = document.getElementById("statusBar");
+if (!(statusBar instanceof HTMLElement)) {
   throw new Error("element not found or invalid");
 }
-/**
- * @type {{
- *  element: HTMLElement,
- *  processes: StatusBarEvent[][],
- *  processIndex: Map<string, number>,
- * }}
- */
-const statusBar = {
-  element: statusBarElement,
-  processes: [],
-  processIndex: new Map(),
+const statusBarState = {
+  /** @type {StatusBarEvent[]} */
+  processStack: [],
+  /** @type {Map<string, {index: number, tombstoned: boolean, startedAt: number}>} */
+  processMetadata: new Map(),
 }
 Events.On("StatusBarEvent", async function(event) {
   const windowName = await Window.Name();
   if (event.sender != windowName) {
     return;
   }
-  const statusBarEvent = new StatusBarEvent(event.data);
-  const index = statusBar.processIndex.get(statusBarEvent.eventID);
-  if (index == null) {
-    if (statusBarEvent.category != "stop") {
-      statusBar.processes.push([statusBarEvent]);
-      statusBar.processIndex.set(statusBarEvent.eventID, statusBar.processes.length - 1);
-      document.dispatchEvent(new Event("StatusBarStateUpdated", { bubbles: true }));
-    }
-  } else {
-    if (statusBarEvent.category == "stop") {
-      // TODO: mark this process as tombstoned.
+  const metadata = statusBarState.processMetadata.get(event.data.eventID);
+  if (metadata == null) {
+    if (event.data.done) {
       return;
     }
-    statusBar.processes[index].push(statusBarEvent);
+    statusBarState.processStack.push(event.data);
+    statusBarState.processMetadata.set(event.data.eventID, {
+      index: statusBarState.processStack.length - 1,
+      tombstoned: false,
+      startedAt: event.data.timestamp,
+    });
+    document.dispatchEvent(new Event("StatusBarStateUpdated", { bubbles: true }));
+    return;
   }
+  if (event.data.done) {
+    metadata.tombstoned = true;
+    document.dispatchEvent(new Event("StatusBarStateUpdated", { bubbles: true }));
+    return;
+  }
+  statusBarState.processStack[metadata.index] = event.data;
+  document.dispatchEvent(new Event("StatusBarStateUpdated", { bubbles: true }));
+  return;
 });
+
+const statusBarSpinner = statusBar.querySelector("svg");
+if (!(statusBarSpinner instanceof SVGSVGElement)) {
+  throw new Error("element not found or invalid");
+}
+// TODO: register an init function which is called at the bottom which hides or shows the statusBarSpinner.
+
+const statusBarStatus = statusBar.querySelector("[role=status]");
+if (!(statusBarStatus instanceof HTMLElement)) {
+  throw new Error("element not found or invalid");
+}
+// TODO: register an init function which is called at the bottom which hides or shows the statusBarStatus message.
 document.addEventListener("StatusBarStateUpdated", function() {
   // TODO: consult statusBar state and update textContent accordingly.
 });
+
 
 document.addEventListener("Connect", function() {
   Backend.Dialog(new MessageDialogOptions({

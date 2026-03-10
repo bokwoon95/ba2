@@ -40,9 +40,9 @@ type Backend struct {
 
 type StatusBarEvent struct {
 	EventID   string `json:"eventID"`
-	Category  string `json:"category"`
 	Message   string `json:"message"`
 	Timestamp int64  `json:"timestamp"`
+	Done      bool   `json:"done"`
 }
 
 var _ http.Handler = (*Backend)(nil)
