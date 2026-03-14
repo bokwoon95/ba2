@@ -22,6 +22,7 @@ var assets embed.FS
 func main() {
 	var playwrightDriver *playwright.PlaywrightDriver
 	var playwrightRunOptions *playwright.RunOptions
+	var chromeProfileDirectory string
 	startupErr := func() error {
 		userHomeDir, err := os.UserHomeDir()
 		if err != nil {
@@ -33,7 +34,12 @@ func main() {
 		} else {
 			driverDirectory = filepath.Join(userHomeDir, "browserautomate", "playwrightdriver")
 		}
-		err = os.MkdirAll(driverDirectory, 0755)
+		err = os.MkdirAll(driverDirectory, 0777)
+		if err != nil {
+			return stacktrace.New(err)
+		}
+		chromeProfileDirectory = filepath.Join(userHomeDir, "browserautomate", "chromeprofile")
+		err = os.MkdirAll(chromeProfileDirectory, 0777)
 		if err != nil {
 			return stacktrace.New(err)
 		}
@@ -59,10 +65,11 @@ func main() {
 		},
 	})
 	backend := &Backend{
-		App:                  app,
-		PlaywrightDriver:     playwrightDriver,
-		PlaywrightRunOptions: playwrightRunOptions,
-		Windows:              make(map[string]*application.WebviewWindow),
+		App:                    app,
+		PlaywrightDriver:       playwrightDriver,
+		PlaywrightRunOptions:   playwrightRunOptions,
+		ChromeProfileDirectory: chromeProfileDirectory,
+		Windows:                make(map[string]*application.WebviewWindow),
 	}
 	defer backend.Close()
 	app.RegisterService(application.NewServiceWithOptions(backend, application.ServiceOptions{

@@ -6,9 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -168,32 +166,28 @@ func (backend *Backend) OpenBrowser() error {
 		if err != nil {
 			var playwrightErr *playwright.Error
 			if !errors.As(err, &playwrightErr) || !strings.Contains(playwrightErr.Message, "ECONNREFUSED") {
-				return stacktrace.New(err)
-			}
-			userHomeDir, err := os.UserHomeDir()
-			if err != nil {
-				return stacktrace.New(err)
+				return fmt.Errorf("unexpected error when connecting via Chrome DevTools Protocol: %w", err)
 			}
 			var cmd *exec.Cmd
 			switch runtime.GOOS {
 			case "windows":
-				cmd = exec.Command("pwsh.exe", "-command", fmt.Sprintf(`Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList --remote-debugging-port=9222, --user-data-dir=%s, https://www.google.com`, strconv.Quote(filepath.Join(userHomeDir, "BrowserAutomateChromeProfile"))))
+				cmd = exec.Command("pwsh.exe", "-command", fmt.Sprintf(`Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList --remote-debugging-port=9222, --user-data-dir=%s, https://www.google.com`, strconv.Quote(backend.ChromeProfileDirectory)))
 			case "darwin":
-				cmd = exec.Command("open", "-a", "Google Chrome", "--remote-debugging-port=9222", "https://www.google.com")
+				cmd = exec.Command("open", "-a", "Google Chrome", "--args", "--remote-debugging-port=9222", "--user-data-dir="+backend.ChromeProfileDirectory, "https://www.google.com")
 			default:
-				return stacktrace.New(fmt.Errorf("unsupported OS: %s", runtime.GOOS))
+				return fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 			}
 			fmt.Printf("running %s\n", cmd.String())
 			err = cmd.Run()
 			if err != nil {
-				return stacktrace.New(err)
+				return fmt.Errorf("failed to start Google Chrome: %s: %w", cmd.String(), err)
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 			waitForCDP(ctx, "http://127.0.0.1:9222")
 			backend.Browser, err = backend.Playwright.Chromium.ConnectOverCDP("http://127.0.0.1:9222")
 			if err != nil {
-				return stacktrace.New(err)
+				return fmt.Errorf("error connecting via Chrome DevTools Protocol: %w", err)
 			}
 		}
 	}

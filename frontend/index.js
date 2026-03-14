@@ -1,4 +1,4 @@
-import { Events, Window } from "@wailsio/runtime";
+import { Events, Window, Call } from "@wailsio/runtime";
 import { Backend, StatusBarEvent, InstallDriverEvent, WebviewWindowOptions, MessageDialogOptions } from "./bindings/changeme";
 import "basecoat-css/basecoat";
 import "basecoat-css/all";
@@ -32,9 +32,10 @@ async function init() {
     await Backend.OpenBrowser();
     console.log(await Backend.Hello());
   } catch (err) {
+    console.error(err);
     await Backend.Dialog(new MessageDialogOptions({
       Title: "Error",
-      Message: err instanceof Error ? err.toString() : String(err),
+      Message: err instanceof Error ? err.message : String(err),
     }));
   }
 }
