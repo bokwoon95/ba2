@@ -85,9 +85,11 @@ try {
       if (processUpdate.progressValue >= processUpdate.progressMax) {
         if (processInfo.index == this.processStack.length - 1) {
           this.processStack.pop();
+          this.currentProcess = this.processStack.length == 0 ? null : this.processStack[this.processStack.length - 1];
+          document.dispatchEvent(new Event("CurrentProcessUpdated", { bubbles: true }));
+        } else {
+          processInfo.tombstoned = true;
         }
-        processInfo.tombstoned = true;
-        document.dispatchEvent(new Event("CurrentProcessUpdated", { bubbles: true }));
         return;
       }
       this.processStack[processInfo.index] = processUpdate;
