@@ -13,7 +13,7 @@ declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
             "InstallDriverEvent": main$0.InstallDriverEvent;
-            "StatusBarEvent": main$0.StatusBarEvent;
+            "ProcessUpdate": main$0.ProcessUpdate;
         }
     }
 }

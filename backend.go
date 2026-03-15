@@ -20,7 +20,7 @@ import (
 )
 
 func init() {
-	application.RegisterEvent[StatusBarEvent]("StatusBarEvent")
+	application.RegisterEvent[ProcessUpdate]("ProcessUpdate")
 }
 
 type Backend struct {
@@ -36,11 +36,12 @@ type Backend struct {
 	Pages                  map[int64]playwright.Page
 }
 
-type StatusBarEvent struct {
-	EventID   string `json:"eventID"`
-	Message   string `json:"message"`
-	Timestamp int64  `json:"timestamp"`
-	Done      bool   `json:"done"`
+type ProcessUpdate struct {
+	ProcessID     string `json:"processID"`
+	Message       string `json:"message"`
+	ProgressValue int    `json:"progressValue"`
+	ProgressMax   int    `json:"progressMax"`
+	Timestamp     int64  `json:"timestamp"`
 }
 
 var _ http.Handler = (*Backend)(nil)

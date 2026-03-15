@@ -10,6 +10,6 @@ export {
 export {
     InstallDriverEvent,
     MessageDialogOptions,
-    StatusBarEvent,
+    ProcessUpdate,
     WebviewWindowOptions
 } from "./models.js";

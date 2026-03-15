@@ -102,18 +102,18 @@ export class MessageDialogOptions {
     }
 }
 
-export class StatusBarEvent {
+export class ProcessUpdate {
     /**
-     * Creates a new StatusBarEvent instance.
-     * @param {Partial<StatusBarEvent>} [$$source = {}] - The source object to create the StatusBarEvent.
+     * Creates a new ProcessUpdate instance.
+     * @param {Partial<ProcessUpdate>} [$$source = {}] - The source object to create the ProcessUpdate.
      */
     constructor($$source = {}) {
-        if (!("eventID" in $$source)) {
+        if (!("processID" in $$source)) {
             /**
              * @member
              * @type {string}
              */
-            this["eventID"] = "";
+            this["processID"] = "";
         }
         if (!("message" in $$source)) {
             /**
@@ -122,6 +122,20 @@ export class StatusBarEvent {
              */
             this["message"] = "";
         }
+        if (!("progressValue" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["progressValue"] = 0;
+        }
+        if (!("progressMax" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["progressMax"] = 0;
+        }
         if (!("timestamp" in $$source)) {
             /**
              * @member
@@ -129,25 +143,18 @@ export class StatusBarEvent {
              */
             this["timestamp"] = 0;
         }
-        if (!("done" in $$source)) {
-            /**
-             * @member
-             * @type {boolean}
-             */
-            this["done"] = false;
-        }
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new StatusBarEvent instance from a string or object.
+     * Creates a new ProcessUpdate instance from a string or object.
      * @param {any} [$$source = {}]
-     * @returns {StatusBarEvent}
+     * @returns {ProcessUpdate}
      */
     static createFrom($$source = {}) {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new StatusBarEvent(/** @type {Partial<StatusBarEvent>} */($$parsedSource));
+        return new ProcessUpdate(/** @type {Partial<ProcessUpdate>} */($$parsedSource));
     }
 }
 
